@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shamsi_date/shamsi_date.dart';
+import 'package:shamsi_date/shamsi_date.dart' as sh;
+// removed unused persian_datetime_picker import
+import 'package:daily_work/utils/jalali_utils.dart';
 
+import '../controllers/wage_controller.dart';
 import '../controllers/workdays_controller.dart';
 import '../controllers/employers_controller.dart';
 import '../models/work_day.dart';
+import '../utils/formater.dart';
 import '../utils/price_format.dart';
 
 class DayFormPage extends StatefulWidget {
-  final DateTime selectedDate;
+  final sh.Jalali selectedDate;
 
   const DayFormPage({super.key, required this.selectedDate});
 
@@ -17,40 +21,46 @@ class DayFormPage extends StatefulWidget {
 }
 
 class _DayFormPageState extends State<DayFormPage> {
-  final WorkDaysController workDaysController = Get.put(WorkDaysController());
-  final EmployersController employersController = Get.put(
-    EmployersController(),
-  );
-
+  final WorkDaysController workDaysController = Get.find<WorkDaysController>();
+  final EmployersController employersController =
+      Get.find<EmployersController>();
+  final WageController wageController = Get.find<WageController>();
+  String? _employerErrorText;
+  String? _wageErrorText;
   late WorkDay? existingWorkDay;
   int? selectedEmployerId;
   bool worked = false;
   double hours = 8.0;
   String workType = 'full'; // 'full' = یک روز, 'half' = نصف روز
-  final TextEditingController wageController = TextEditingController(
-    text: '1000000'.toPriceString(),
-  );
+  final TextEditingController wageTextController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    existingWorkDay = workDaysController.getByDate(widget.selectedDate);
+    existingWorkDay = workDaysController.getByJalali(widget.selectedDate);
     if (existingWorkDay != null) {
       selectedEmployerId = existingWorkDay!.employerId;
       worked = existingWorkDay!.worked;
       hours = existingWorkDay!.hours;
       workType = hours == 8.0 ? 'full' : 'half';
       descriptionController.text = existingWorkDay!.description ?? '';
-      wageController.text = existingWorkDay!.wage != null
+      wageTextController.text = existingWorkDay!.wage != null
           ? existingWorkDay!.wage!.toString().toPriceString()
-          : '1000000'.toPriceString();
+          : '';
+    } else {
+      if (wageController.settings.value.dailyWage != 0) {
+        wageTextController.text = wageController.settings.value.dailyWage
+            .toPriceString();
+      } else {
+        wageTextController.text = '1000000'.toPriceString();
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final jd = Jalali.fromDateTime(widget.selectedDate);
+    final jd = widget.selectedDate;
 
     return Scaffold(
       appBar: AppBar(
@@ -62,6 +72,18 @@ class _DayFormPageState extends State<DayFormPage> {
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: _showDeleteConfirmDialog,
             ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => Get.toNamed('/settings')!.then((value) {
+              if (value == 1 && existingWorkDay == null) {
+                wageTextController.text = wageController
+                    .settings
+                    .value
+                    .dailyWage
+                    .toPriceString();
+              }
+            }),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -171,10 +193,13 @@ class _DayFormPageState extends State<DayFormPage> {
                                   const SizedBox(height: 8),
                                   DropdownButtonFormField<int?>(
                                     value: selectedEmployerId,
-                                    decoration: const InputDecoration(
+
+                                    decoration: InputDecoration(
                                       labelText: 'انتخاب کارفرما',
-                                      border: OutlineInputBorder(),
+                                      border: const OutlineInputBorder(),
+                                      errorText: _employerErrorText,
                                     ),
+                                    hint: const Text('کارفرما را انتخاب کنید'),
                                     items: employersController.employers.map((
                                       entry,
                                     ) {
@@ -186,6 +211,9 @@ class _DayFormPageState extends State<DayFormPage> {
                                     onChanged: (value) {
                                       setState(() {
                                         selectedEmployerId = value;
+                                        if (value != null) {
+                                          _employerErrorText = null;
+                                        }
                                       });
                                     },
                                   ),
@@ -240,7 +268,7 @@ class _DayFormPageState extends State<DayFormPage> {
                                       ),
                                       SizedBox(width: 8),
                                       Text(
-                                        'مبلغ دستمزد',
+                                        'مبلغ دستمزد *',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -249,28 +277,27 @@ class _DayFormPageState extends State<DayFormPage> {
                                   ),
                                   const SizedBox(height: 8),
                                   TextField(
-                                    controller: wageController,
-                                    decoration: const InputDecoration(
+                                    controller: wageTextController,
+                                    decoration: InputDecoration(
                                       labelText: 'مبلغ دستمزد (تومان)',
-                                      border: OutlineInputBorder(),
+                                      border: const OutlineInputBorder(),
+                                      errorText: _wageErrorText,
                                     ),
                                     keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      // Use the custom formatter here
+                                      ThousandSeparatorInputFormatter(),
+                                    ],
                                     onChanged: (value) {
-                                      String digits = value.replaceAll(
-                                        RegExp(r'[^0-9]'),
-                                        '',
-                                      );
-                                      wageController.value = wageController
-                                          .value
-                                          .copyWith(
-                                            text: digits.toPriceString(),
-                                            selection: TextSelection.collapsed(
-                                              offset: digits
-                                                  .toPriceString()
-                                                  .length,
-                                            ),
-                                          );
+                                      // با هر تغییر، سعی کن خطا را پاک کنی (اعتبارسنجی اصلی در ذخیره است)
+                                      if (value.isNotEmpty &&
+                                          _wageErrorText != null) {
+                                        setState(() {
+                                          _wageErrorText = null;
+                                        });
+                                      }
                                     },
+                                    //
                                   ),
                                 ],
                               ),
@@ -332,20 +359,76 @@ class _DayFormPageState extends State<DayFormPage> {
     );
   }
 
+  @override
+  void dispose() {
+    wageTextController.dispose();
+    descriptionController.dispose();
+    super.dispose();
+  }
+
   void _saveWorkDay() {
-    final wageValue =
-        int.tryParse(wageController.text.replaceAll(',', '')) ?? 1000000;
+    // بازنشانی پیام های خطا قبل از هر اعتبارسنجی
+    setState(() {
+      _employerErrorText = null;
+      _wageErrorText = null;
+    });
+
+    bool isValid = true;
+
+    // 1. اعتبارسنجی انتخاب کارفرما (فقط اگر کار کرده باشد)
+    if (worked && selectedEmployerId == null) {
+      setState(() {
+        _employerErrorText = 'لطفا یک کارفرما انتخاب کنید';
+      });
+      isValid = false;
+    }
+
+    // 2. اعتبارسنجی وارد کردن مبلغ دستمزد (فقط اگر کار کرده باشد)
+    final String wageInput = wageTextController.text.replaceAll(',', '').trim();
+    if (worked && wageInput.isEmpty) {
+      setState(() {
+        _wageErrorText = 'لطفا مبلغ دستمزد را وارد کنید';
+      });
+      isValid = false;
+    }
+
+    final int? wageValue = wageInput.isEmpty ? null : int.tryParse(wageInput);
+    if (worked && wageInput.isNotEmpty && wageValue == null) {
+      // اگر چیزی وارد شده اما قابل تبدیل به عدد نیست (مثلا فقط حروف)
+      // ThousandSeparatorInputFormatter باید از این جلوگیری کند، اما برای اطمینان
+      setState(() {
+        _wageErrorText = 'مبلغ دستمزد نامعتبر است';
+      });
+      isValid = false;
+    }
+    // همچنین می‌توانید برای wageValue <= 0 هم خطا در نظر بگیرید اگر منطقی باشد
+    // if (worked && wageValue != null && wageValue <= 0) {
+    //   setState(() {
+    //     _wageErrorText = 'مبلغ دستمزد باید بیشتر از صفر باشد';
+    //   });
+    //   isValid = false;
+    // }
+
+    // اگر اعتبارسنجی موفقیت آمیز نبود، از ادامه کار جلوگیری کن
+    if (!isValid) {
+      return;
+    }
+
+    // اگر `worked` نباشد، `employerId` و `wage` می‌توانند null باشند یا مقدار پیش‌فرض بگیرند
+    final jalaliDate = JalaliUtils.formatFromJalali(widget.selectedDate);
     final workDay = WorkDay(
-      date: widget.selectedDate,
-      employerId: selectedEmployerId,
+      jalaliDate: jalaliDate,
+      employerId: worked ? selectedEmployerId : null,
+      // اگر کار نکرده، کارفرما مهم نیست
       worked: worked,
       hours: worked ? hours : 0,
       wage: worked ? wageValue : null,
+      // اگر کار نکرده، دستمزد صفر یا null است
       description: descriptionController.text.trim().isEmpty
           ? null
           : descriptionController.text.trim(),
     );
-
+    print('tarikh (Jalali)==$jalaliDate');
     workDaysController.upsertDay(workDay);
     Get.back();
   }
@@ -365,7 +448,7 @@ class _DayFormPageState extends State<DayFormPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              workDaysController.deleteByDate(widget.selectedDate);
+              workDaysController.deleteByJalali(widget.selectedDate);
               Navigator.pop(context);
               Get.back();
             },

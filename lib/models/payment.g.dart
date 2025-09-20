@@ -17,7 +17,7 @@ class PaymentAdapter extends TypeAdapter<Payment> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Payment(
-      date: fields[0] as DateTime,
+      jalaliDate: fields[0] as String,
       employerId: fields[1] as int?,
       amount: fields[2] as int,
       note: fields[3] as String?,
@@ -29,7 +29,7 @@ class PaymentAdapter extends TypeAdapter<Payment> {
     writer
       ..writeByte(4)
       ..writeByte(0)
-      ..write(obj.date)
+      ..write(obj.jalaliDate)
       ..writeByte(1)
       ..write(obj.employerId)
       ..writeByte(2)

@@ -4,8 +4,9 @@ part 'payment.g.dart';
 
 @HiveType(typeId: 3)
 class Payment extends HiveObject {
+  // Store Jalali date as yyyy/MM/dd for Persian date persistence
   @HiveField(0)
-  DateTime date;
+  String jalaliDate;
 
   @HiveField(1)
   int? employerId; // optional filter by employer
@@ -17,7 +18,7 @@ class Payment extends HiveObject {
   String? note;
 
   Payment({
-    required this.date,
+    required this.jalaliDate,
     this.employerId,
     required this.amount,
     this.note,

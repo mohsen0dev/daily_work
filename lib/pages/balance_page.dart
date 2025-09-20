@@ -1,13 +1,32 @@
 import 'package:daily_work/utils/price_format.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shamsi_date/shamsi_date.dart' as sh;
+import 'package:persian_datetime_picker/persian_datetime_picker.dart' as p;
+import 'package:daily_work/utils/jalali_utils.dart';
 
 import '../controllers/workdays_controller.dart';
 import '../controllers/employers_controller.dart';
 import '../controllers/payments_controller.dart';
 
-class BalancePage extends StatelessWidget {
+class BalancePage extends StatefulWidget {
   const BalancePage({super.key});
+
+  @override
+  State<BalancePage> createState() => _BalancePageState();
+}
+
+class _BalancePageState extends State<BalancePage> {
+  int? selectedEmployerId;
+  sh.Jalali? selectedStartDate;
+  sh.Jalali? selectedEndDate;
+
+  bool _isInRange(String jalaliDate) {
+    if (selectedStartDate == null || selectedEndDate == null) return true;
+    final date = JalaliUtils.parseJalali(jalaliDate);
+    return !date.isBefore(selectedStartDate!) &&
+        !date.isAfter(selectedEndDate!);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,17 +42,31 @@ class BalancePage extends StatelessWidget {
       body: Obx(() {
         final workdaysMap = workDaysController.workdays;
         final workedDays = workdaysMap.values
-            .where((d) => d.worked)
+            .where(
+              (d) =>
+                  d.worked &&
+                  (selectedEmployerId == null ||
+                      d.employerId == selectedEmployerId) &&
+                  _isInRange(d.jalaliDate),
+            )
             .fold<double>(0, (sum, d) => sum + (d.hours / 8));
-        final totalEarned = workdaysMap.values.fold<int>(
-          0,
-          (sum, d) => sum + (d.wage ?? 0),
-        );
+        final totalEarned = workdaysMap.values
+            .where(
+              (d) =>
+                  (selectedEmployerId == null ||
+                      d.employerId == selectedEmployerId) &&
+                  _isInRange(d.jalaliDate),
+            )
+            .fold<int>(0, (sum, d) => sum + (d.wage ?? 0));
 
-        final totalPayments = paymentsController.payments.fold<int>(
-          0,
-          (sum, p) => sum + p.value.amount,
-        );
+        final totalPayments = paymentsController.payments
+            .where(
+              (p) =>
+                  (selectedEmployerId == null ||
+                      p.value.employerId == selectedEmployerId) &&
+                  _isInRange(p.value.jalaliDate),
+            )
+            .fold<int>(0, (sum, p) => sum + p.value.amount);
         final balance = totalEarned - totalPayments;
 
         return SingleChildScrollView(
@@ -41,6 +74,117 @@ class BalancePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Employer filter
+              Card(
+                color: Colors.blue.shade100,
+                elevation: 4,
+                child: Row(
+                  children: [
+                    // const Icon(Icons.filter_list),
+                    // const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonFormField<int?>(
+                        borderRadius: BorderRadius.circular(10),
+                        value: selectedEmployerId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'فیلتر بر اساس کارفرما',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                          ),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('همه کارفرماها'),
+                          ),
+                          ...employersController.employers.map((entry) {
+                            return DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(entry.value.name),
+                            );
+                          }),
+                        ],
+                        onChanged: (v) {
+                          setState(() => selectedEmployerId = v);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        style: ButtonStyle(
+                          shape: WidgetStatePropertyAll(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadiusGeometry.all(
+                                Radius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.date_range),
+                        label: Text(
+                          selectedStartDate == null || selectedEndDate == null
+                              ? 'بازه تاریخ'
+                              : '${selectedStartDate!.year}/${selectedStartDate!.month.toString().padLeft(2, '0')}/${selectedStartDate!.day.toString().padLeft(2, '0')} - ${selectedEndDate!.year}/${selectedEndDate!.month.toString().padLeft(2, '0')}/${selectedEndDate!.day.toString().padLeft(2, '0')}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onPressed: () async {
+                          final pRange =
+                              selectedStartDate == null ||
+                                  selectedEndDate == null
+                              ? null
+                              : p.JalaliRange(
+                                  start: p.Jalali(
+                                    selectedStartDate!.year,
+                                    selectedStartDate!.month,
+                                    selectedStartDate!.day,
+                                  ),
+                                  end: p.Jalali(
+                                    selectedEndDate!.year,
+                                    selectedEndDate!.month,
+                                    selectedEndDate!.day,
+                                  ),
+                                );
+                          final picked = await p.showPersianDateRangePicker(
+                            context: context,
+                            firstDate: p.Jalali(1390, 1, 1),
+                            lastDate: p.Jalali.now(),
+                            initialDateRange: pRange,
+                            initialDate: pRange?.start ?? p.Jalali.now(),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              selectedStartDate = sh.Jalali(
+                                picked.start.year,
+                                picked.start.month,
+                                picked.start.day,
+                              );
+                              selectedEndDate = sh.Jalali(
+                                picked.end.year,
+                                picked.end.month,
+                                picked.end.day,
+                              );
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    // const SizedBox(width: 8),
+                    if (selectedStartDate != null && selectedEndDate != null)
+                      IconButton(
+                        tooltip: 'حذف بازه',
+                        onPressed: () => setState(() {
+                          selectedStartDate = null;
+                          selectedEndDate = null;
+                        }),
+                        icon: const Icon(Icons.clear),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
               // Summary Card with Fade Animation
               TweenAnimationBuilder<double>(
                 tween: Tween<double>(begin: 0, end: 1),
@@ -199,20 +343,30 @@ class BalancePage extends StatelessWidget {
                   final employerWorkdays = workdaysMap.values
                       .where(
                         (workday) =>
-                            workday.employerId == employerId && workday.worked,
+                            workday.employerId == employerId &&
+                            workday.worked &&
+                            _isInRange(workday.jalaliDate),
                       )
                       .fold<double>(
                         0,
                         (sum, workday) => sum + (workday.hours / 8),
                       );
                   final employerEarn = workdaysMap.values
-                      .where((workday) => workday.employerId == employerId)
+                      .where(
+                        (workday) =>
+                            workday.employerId == employerId &&
+                            _isInRange(workday.jalaliDate),
+                      )
                       .fold<int>(
                         0,
                         (sum, workday) => sum + (workday.wage ?? 0),
                       );
                   final employerPayments = paymentsController.payments
-                      .where((p) => p.value.employerId == employerId)
+                      .where(
+                        (p) =>
+                            p.value.employerId == employerId &&
+                            _isInRange(p.value.jalaliDate),
+                      )
                       .fold<int>(0, (sum, p) => sum + p.value.amount);
                   final employerBalance = employerEarn - employerPayments;
                   return TweenAnimationBuilder<double>(

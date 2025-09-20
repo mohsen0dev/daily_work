@@ -4,7 +4,9 @@ import 'package:daily_work/controllers/wage_controller.dart';
 import 'package:daily_work/controllers/workdays_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'models/employer.dart';
 import 'models/payment.dart';
 import 'models/wage_settings.dart';
@@ -13,6 +15,8 @@ import 'pages/calendar_page.dart';
 import 'pages/employers_page.dart';
 import 'pages/payments_page.dart';
 import 'pages/balance_page.dart';
+import 'pages/charts_page.dart';
+import 'pages/settings_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,14 +28,20 @@ Future<void> main() async {
     ..registerAdapter(PaymentAdapter())
     ..registerAdapter(WageSettingsAdapter());
 
-  // Open boxes
-  await Future.wait([
-    Hive.openBox<Employer>('employers'),
-    Hive.openBox<WorkDay>('workdays'),
-    Hive.openBox<Payment>('payments'),
-    Hive.openBox<WageSettings>('settings'),
-  ]);
-  Get.put(WorkDaysController());
+  // Open all boxes
+
+  await Hive.openBox<Employer>('employers');
+  await Hive.openBox<WorkDay>('workdays');
+  await Hive.openBox<Payment>('payments');
+  await Hive.openBox<WageSettings>('settings');
+
+  await Get.putAsync<WorkDaysController>(() async {
+    final controller = WorkDaysController();
+    await controller.init();
+    return controller;
+  }, permanent: true);
+  // Put other controllers
+  // Get.put(WorkDaysController());
   Get.put(EmployersController());
   Get.put(PaymentsController());
   Get.put(WageController());
@@ -46,11 +56,23 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       textDirection: TextDirection.rtl,
+      locale: const Locale('fa', 'IR'),
+      supportedLocales: const [Locale('fa', 'IR')],
+      localizationsDelegates: [
+        // Add Localization
+        PersianMaterialLocalizations.delegate,
+        PersianCupertinoLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+
+      ],
       title: 'Daily Work',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       home: const MainNavigationPage(),
+      getPages: [GetPage(name: '/settings', page: SettingsPage.new)],
     );
   }
 }
@@ -70,6 +92,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     const EmployersPage(),
     const PaymentsPage(),
     const BalancePage(),
+    const ChartsPage(),
   ];
 
   Widget _buildNavItem(int index, IconData icon, String label) {
@@ -145,6 +168,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
                 _buildNavItem(1, Icons.business, 'کارفرما'),
                 _buildNavItem(2, Icons.payments, 'دریافتی‌'),
                 _buildNavItem(3, Icons.account_balance_wallet, 'خلاصه مالی'),
+                _buildNavItem(4, Icons.bar_chart, 'نمودارها'),
               ],
             ),
           ),

@@ -25,7 +25,9 @@ class WageController extends GetxController {
         WageSettings(isDaily: true, dailyWage: 0, hourlyWage: 0),
       );
     }
-    settings.value = _settingsBox.get('wage') ?? WageSettings(isDaily: true, dailyWage: 0, hourlyWage: 0);
+    settings.value =
+        _settingsBox.get('wage') ??
+        WageSettings(isDaily: true, dailyWage: 0, hourlyWage: 0);
   }
 
   Future<void> saveSettings(WageSettings newSettings) async {
@@ -33,11 +35,12 @@ class WageController extends GetxController {
     settings.value = newSettings;
   }
 
-  int totalEarned() {
+  int totalEarned({int? employerId}) {
     final s = settings.value;
     int sum = 0;
     for (final e in _workdayBox.toMap().entries) {
       final d = e.value;
+      if (employerId != null && d.employerId != employerId) continue;
       if (!d.worked) continue;
       if (s.isDaily) {
         sum += s.dailyWage;
@@ -59,7 +62,7 @@ class WageController extends GetxController {
   }
 
   int balance({int? employerId}) {
-    final earned = totalEarned();
+    final earned = totalEarned(employerId: employerId);
     final paid = totalPayments(employerId: employerId);
     return earned - paid;
   }

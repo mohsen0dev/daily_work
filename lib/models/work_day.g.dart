@@ -17,20 +17,23 @@ class WorkDayAdapter extends TypeAdapter<WorkDay> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return WorkDay(
-      date: fields[0] as DateTime,
+      jalaliDate: fields[0] as String,
       employerId: fields[1] as int?,
       worked: fields[2] as bool,
       hours: fields[3] as double,
       description: fields[4] as String?,
+      wage: fields[5] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, WorkDay obj) {
     writer
+      ..writeByte(6)
       ..writeByte(5)
+      ..write(obj.wage)
       ..writeByte(0)
-      ..write(obj.date)
+      ..write(obj.jalaliDate)
       ..writeByte(1)
       ..write(obj.employerId)
       ..writeByte(2)

@@ -13,9 +13,8 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
-  // Use Get.find() to get the existing controller instance.
-  // No need to use Get.put() here as it should be initialized elsewhere.
-  final WorkDaysController workDaysController = Get.put(WorkDaysController());
+  // Use the existing singleton instance registered in main.dart
+  final WorkDaysController workDaysController = Get.find<WorkDaysController>();
 
   Jalali _focusedJalali = Jalali.now();
   final RxInt _selectedDay = Jalali.now().day.obs;
@@ -80,7 +79,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
         for (int day = 1; day <= monthLength; day++) {
           final jd = Jalali(_focusedJalali.year, _focusedJalali.month, day);
-          final wd = workDaysController.getByDate(jd.toDateTime());
+          final wd = workDaysController.getByJalali(jd);
           final worked = wd?.worked == true;
           final isToday =
               (jd.year == today.year &&
@@ -93,7 +92,7 @@ class _CalendarPageState extends State<CalendarPage> {
               onTap: () async {
                 _selectedDay.value = day;
                 // Navigate and wait for the result.
-                await Get.to(() => DayFormPage(selectedDate: jd.toDateTime()));
+                await Get.to(() => DayFormPage(selectedDate: jd));
                 // After returning from DayFormPage, force a data refresh.
                 workDaysController.update();
               },

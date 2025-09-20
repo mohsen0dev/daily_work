@@ -9,7 +9,7 @@ class EmployersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final EmployersController controller = Get.put(EmployersController());
+    final EmployersController controller = Get.find<EmployersController>();
 
     return Scaffold(
       appBar: AppBar(

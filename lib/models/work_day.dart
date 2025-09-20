@@ -6,8 +6,10 @@ part 'work_day.g.dart';
 class WorkDay extends HiveObject {
   @HiveField(5)
   int? wage; // مبلغ دستمزد
+
+  // Store Jalali date as yyyy/MM/dd for Persian date persistence
   @HiveField(0)
-  DateTime date; // store as UTC date (normalize to midnight UTC)
+  String jalaliDate;
 
   @HiveField(1)
   int? employerId; // Hive key of Employer box
@@ -22,7 +24,7 @@ class WorkDay extends HiveObject {
   String? description;
 
   WorkDay({
-    required this.date,
+    required this.jalaliDate,
     this.employerId,
     this.worked = false,
     this.hours = 0,

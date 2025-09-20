@@ -31,4 +31,9 @@ class PaymentsController extends GetxController {
     await _paymentBox.delete(key);
     _refresh();
   }
+
+  void editPayment(dynamic key, Payment payment) async {
+    await _paymentBox.put(key, payment);
+    _refresh();
+  }
 }
