@@ -2,7 +2,9 @@ import 'package:daily_work/controllers/employers_controller.dart';
 import 'package:daily_work/controllers/payments_controller.dart';
 import 'package:daily_work/controllers/wage_controller.dart';
 import 'package:daily_work/controllers/workdays_controller.dart';
+import 'package:daily_work/utils/back_button_handler.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -45,6 +47,7 @@ Future<void> main() async {
   Get.put(EmployersController());
   Get.put(PaymentsController());
   Get.put(WageController());
+  Get.put(MainNavigationController());
 
   runApp(const MyApp());
 }
@@ -65,7 +68,6 @@ class MyApp extends StatelessWidget {
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
-
       ],
       title: 'Daily Work',
       theme: ThemeData(
@@ -85,7 +87,7 @@ class MainNavigationPage extends StatefulWidget {
 }
 
 class _MainNavigationPageState extends State<MainNavigationPage> {
-  int _currentIndex = 0;
+  late final MainNavigationController _navigationController;
 
   final List<Widget> _pages = [
     const CalendarPage(),
@@ -95,81 +97,106 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     const ChartsPage(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _navigationController = Get.find<MainNavigationController>();
+  }
+
   Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _currentIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.blue.withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TweenAnimationBuilder<double>(
-              tween: Tween<double>(begin: 0, end: isSelected ? 1.2 : 1.0),
-              curve: Curves.easeInOut,
-              duration: const Duration(milliseconds: 200),
-              builder: (context, value, child) {
-                return Transform.scale(
-                  scale: value,
-                  child: Icon(
-                    icon,
-                    color: isSelected ? Colors.blue : Colors.grey,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 1),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: TextStyle(
-                color: isSelected ? Colors.blue : Colors.grey,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 12,
+    return Obx(() {
+      final isSelected = _navigationController.currentIndex == index;
+      return GestureDetector(
+        onTap: () => _navigationController.setCurrentIndex(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.blue.withValues(alpha: 0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: isSelected ? 1.2 : 1.0),
+                curve: Curves.easeInOut,
+                duration: const Duration(milliseconds: 200),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Icon(
+                      icon,
+                      color: isSelected ? Colors.blue : Colors.grey,
+                    ),
+                  );
+                },
               ),
-              child: Text(label),
-            ),
-          ],
+              const SizedBox(height: 1),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  color: isSelected ? Colors.blue : Colors.grey,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 12,
+                ),
+                child: Text(label),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: Container(
-        // height: 60,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            height: 64,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(0, Icons.calendar_month, 'تقویم'),
-                _buildNavItem(1, Icons.business, 'کارفرما'),
-                _buildNavItem(2, Icons.payments, 'دریافتی‌'),
-                _buildNavItem(3, Icons.account_balance_wallet, 'خلاصه مالی'),
-                _buildNavItem(4, Icons.bar_chart, 'نمودارها'),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          BackButtonHandler.handleBackButton(
+            context,
+            _navigationController.currentIndex,
+          );
+        }
+      },
+      child: Obx(
+        () => Scaffold(
+          body: _pages[_navigationController.currentIndex],
+          bottomNavigationBar: Container(
+            // height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
               ],
+            ),
+            child: SafeArea(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                height: 64,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(0, Icons.calendar_month, 'تقویم'),
+                    _buildNavItem(1, Icons.business, 'کارفرما'),
+                    _buildNavItem(2, Icons.payments, 'دریافتی‌'),
+                    _buildNavItem(
+                      3,
+                      Icons.account_balance_wallet,
+                      'خلاصه مالی',
+                    ),
+                    _buildNavItem(4, Icons.bar_chart, 'نمودارها'),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
