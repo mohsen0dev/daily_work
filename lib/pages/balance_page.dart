@@ -1,224 +1,137 @@
+// D:/flutter_project/daily_work/lib/pages/balance_page.dart
+
+import 'package:daily_work/models/employer.dart';
 import 'package:daily_work/utils/price_format.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shamsi_date/shamsi_date.dart' as sh;
-import 'package:persian_datetime_picker/persian_datetime_picker.dart' as p;
 import 'package:daily_work/utils/jalali_utils.dart';
 
 import '../controllers/workdays_controller.dart';
 import '../controllers/employers_controller.dart';
 import '../controllers/payments_controller.dart';
+import '../widgets/shared_filter_bar.dart'; // import ویجت فیلتر مشترک
 
+/// صفحه نمایش تراز حسابداری، شامل خلاصه‌ی کلی و جزئیات به تفکیک کارفرما.
+/// امکان فیلتر کردن بر اساس کارفرما و بازه زمانی (ماهیانه) را فراهم می‌کند.
 class BalancePage extends StatefulWidget {
+  /// سازنده BalancePage.
   const BalancePage({super.key});
 
   @override
   State<BalancePage> createState() => _BalancePageState();
 }
 
+/// State مربوط به ویجت BalancePage.
 class _BalancePageState extends State<BalancePage> {
+  /// شناسه کارفرمای انتخاب شده. اگر null باشد، همه کارفرماها را شامل می‌شود.
   int? selectedEmployerId;
-  sh.Jalali? selectedStartDate;
-  sh.Jalali? selectedEndDate;
 
-  bool _isInRange(String jalaliDate) {
-    if (selectedStartDate == null || selectedEndDate == null) return true;
-    final date = JalaliUtils.parseJalali(jalaliDate);
-    return !date.isBefore(selectedStartDate!) &&
-        !date.isAfter(selectedEndDate!);
+  /// لیستی از ماه‌های انتخاب شده برای فیلتر.
+  List<sh.Jalali> selectedMonths = [];
+
+  /// مقداردهی اولیه State.
+  /// فیلتر تاریخ را به صورت پیش‌فرض روی ماه جاری تنظیم می‌کند.
+  @override
+  void initState() {
+    super.initState();
+    _setDefaultMonthFilter();
   }
 
+  /// تنظیم فیلتر ماه به صورت پیش‌فرض روی ماه جاری.
+  void _setDefaultMonthFilter() {
+    final now = sh.Jalali.now();
+    setState(() {
+      selectedMonths = [sh.Jalali(now.year, now.month, 1)];
+    });
+  }
+
+  /// بررسی می‌کند که آیا تاریخ جلالی ورودی در بین ماه‌های انتخاب شده قرار دارد یا خیر.
+  /// [jalaliDate] تاریخ جلالی به فرمت رشته.
+  /// برمی‌گرداند true اگر تاریخ در بازه باشد یا هیچ ماهی انتخاب نشده باشد، در غیر این صورت false.
+  bool _isInSelectedMonths(String jalaliDate) {
+    if (selectedMonths.isEmpty) return true;
+    final date = JalaliUtils.parseJalali(jalaliDate);
+    return selectedMonths.any((m) => m.year == date.year && m.month == date.month);
+  }
+
+  /// ساختار اصلی UI صفحه تراز حسابداری.
   @override
   Widget build(BuildContext context) {
-    final WorkDaysController workDaysController =
-        Get.find<WorkDaysController>();
-    final EmployersController employersController =
-        Get.find<EmployersController>();
-    final PaymentsController paymentsController =
-        Get.find<PaymentsController>();
+    final WorkDaysController workDaysController = Get.find<WorkDaysController>();
+    final EmployersController employersController = Get.find<EmployersController>();
+    final PaymentsController paymentsController = Get.find<PaymentsController>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('تسویه حساب'), centerTitle: true),
-      body: Obx(() {
-        final workdaysMap = workDaysController.workdays;
-        final workedDays = workdaysMap.values
-            .where(
-              (d) =>
-                  d.worked &&
-                  (selectedEmployerId == null ||
-                      d.employerId == selectedEmployerId) &&
-                  _isInRange(d.jalaliDate),
-            )
-            .fold<double>(0, (sum, d) => sum + (d.hours / 8));
-        final totalEarned = workdaysMap.values
-            .where(
-              (d) =>
-                  (selectedEmployerId == null ||
-                      d.employerId == selectedEmployerId) &&
-                  _isInRange(d.jalaliDate),
-            )
-            .fold<int>(0, (sum, d) => sum + (d.wage ?? 0));
+      backgroundColor: Theme.of(context).secondaryHeaderColor.withAlpha(370),
+      body: SafeArea(
+        child: Column(
+          children: [
+            /// ویجت نوار فیلتر مشترک برای انتخاب کارفرما و ماه.
+            SharedFilterBar(
+              employersController: employersController,
+              initialSelectedEmployerId: selectedEmployerId,
+              initialSelectedMonths: selectedMonths,
+              onEmployerChanged: (newId) {
+                setState(() => selectedEmployerId = newId);
+              },
+              onDateFilterChanged: (newMonths) {
+                setState(() => selectedMonths = newMonths);
+              },
+            ),
+            Expanded(
+              child: Obx(() {
+                final workdaysMap = workDaysController.workdays;
 
-        final totalPayments = paymentsController.payments
-            .where(
-              (p) =>
-                  (selectedEmployerId == null ||
-                      p.value.employerId == selectedEmployerId) &&
-                  _isInRange(p.value.jalaliDate),
-            )
-            .fold<int>(0, (sum, p) => sum + p.value.amount);
-        final balance = totalEarned - totalPayments;
+                /// محاسبه کل روزهای کاری فیلتر شده بر اساس تاریخ.
+                final overallWorkedDays = workdaysMap.values
+                    .where((d) => d.worked && _isInSelectedMonths(d.jalaliDate))
+                    .fold<double>(0, (sum, d) => sum + (d.hours / 8));
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Employer filter
-              Card(
-                color: Colors.blue.shade100,
-                elevation: 4,
-                child: Row(
-                  children: [
-                    // const Icon(Icons.filter_list),
-                    // const SizedBox(width: 8),
-                    Expanded(
-                      child: DropdownButtonFormField<int?>(
-                        borderRadius: BorderRadius.circular(10),
-                        value: selectedEmployerId,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'فیلتر بر اساس کارفرما',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),
-                          ),
-                        ),
-                        items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('همه کارفرماها'),
-                          ),
-                          ...employersController.employers.map((entry) {
-                            return DropdownMenuItem(
-                              value: entry.key,
-                              child: Text(entry.value.name),
-                            );
-                          }),
-                        ],
-                        onChanged: (v) {
-                          setState(() => selectedEmployerId = v);
-                        },
+                /// محاسبه کل دستمزد کسب شده فیلتر شده بر اساس تاریخ.
+                final overallTotalEarned = workdaysMap.values
+                    .where((d) => _isInSelectedMonths(d.jalaliDate))
+                    .fold<int>(0, (sum, d) => sum + (d.wage ?? 0));
+
+                /// محاسبه کل دریافتی‌ها فیلتر شده بر اساس تاریخ.
+                final overallTotalPayments = paymentsController.payments
+                    .where((p) => _isInSelectedMonths(p.value.jalaliDate))
+                    .fold<int>(0, (sum, p) => sum + p.value.amount);
+
+                /// محاسبه تراز کلی حساب.
+                final overallBalance = overallTotalEarned - overallTotalPayments;
+
+                /// لیست کارفرمایانی که باید نمایش داده شوند (بر اساس فیلتر کارفرما).
+                final employersToDisplay = selectedEmployerId == null
+                    ? employersController.employers
+                    : employersController.employers
+                    .where((entry) => entry.key == selectedEmployerId)
+                    .toList();
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsetsDirectional.all(8),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
+
+                      /// کارت نمایش خلاصه‌ی کلی.
+                      _sumDataCard(
+                        context,
+                        overallWorkedDays,
+                        overallTotalEarned,
+                        overallTotalPayments,
+                        overallBalance,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      height: 48,
-                      child: OutlinedButton.icon(
-                        style: ButtonStyle(
-                          shape: WidgetStatePropertyAll(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadiusGeometry.all(
-                                Radius.circular(10),
-                              ),
-                            ),
-                          ),
-                        ),
-                        icon: const Icon(Icons.date_range),
-                        label: Text(
-                          selectedStartDate == null || selectedEndDate == null
-                              ? 'بازه تاریخ'
-                              : '${selectedStartDate!.year}/${selectedStartDate!.month.toString().padLeft(2, '0')}/${selectedStartDate!.day.toString().padLeft(2, '0')} - ${selectedEndDate!.year}/${selectedEndDate!.month.toString().padLeft(2, '0')}/${selectedEndDate!.day.toString().padLeft(2, '0')}',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        onPressed: () async {
-                          final pRange =
-                              selectedStartDate == null ||
-                                  selectedEndDate == null
-                              ? null
-                              : p.JalaliRange(
-                                  start: p.Jalali(
-                                    selectedStartDate!.year,
-                                    selectedStartDate!.month,
-                                    selectedStartDate!.day,
-                                  ),
-                                  end: p.Jalali(
-                                    selectedEndDate!.year,
-                                    selectedEndDate!.month,
-                                    selectedEndDate!.day,
-                                  ),
-                                );
-                          final picked = await p.showPersianDateRangePicker(
-                            context: context,
-                            firstDate: p.Jalali(1390, 1, 1),
-                            lastDate: p.Jalali.now(),
-                            initialDateRange: pRange,
-                            initialDate: pRange?.start ?? p.Jalali.now(),
-                          );
-                          if (picked != null) {
-                            setState(() {
-                              selectedStartDate = sh.Jalali(
-                                picked.start.year,
-                                picked.start.month,
-                                picked.start.day,
-                              );
-                              selectedEndDate = sh.Jalali(
-                                picked.end.year,
-                                picked.end.month,
-                                picked.end.day,
-                              );
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                    // const SizedBox(width: 8),
-                    if (selectedStartDate != null && selectedEndDate != null)
-                      IconButton(
-                        tooltip: 'حذف بازه',
-                        onPressed: () => setState(() {
-                          selectedStartDate = null;
-                          selectedEndDate = null;
-                        }),
-                        icon: const Icon(Icons.clear),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Summary Card with Fade Animation
-              TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0, end: 1),
-                duration: const Duration(milliseconds: 700),
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, (1 - value) * 30),
-                      child: child,
-                    ),
-                  );
-                },
-                child: Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  shadowColor: Colors.green.shade100,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                      const SizedBox(height: 18),
+
+                      // کارت‌های جزئیات به تفکیک کارفرما
+                      if (employersToDisplay.isNotEmpty) ...[
+                        const Row(
                           children: [
-                            const Icon(
-                              Icons.account_balance_wallet,
-                              color: Colors.green,
-                              size: 28,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'خلاصه کلی',
+                            Icon(Icons.groups, color: Colors.blue, size: 22),
+                            SizedBox(width: 6),
+                            Text(
+                              'جزئیات به تفکیک کارفرما',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -226,268 +139,356 @@ class _BalancePageState extends State<BalancePage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        _buildSummaryRow(
-                          'تعداد روز کاری:',
-                          workedDays % 1 == 0
-                              ? workedDays.toInt().toString()
-                              : workedDays.toStringAsFixed(1),
-                          Colors.orange,
-                          icon: Icons.calendar_today,
-                          showCurrency: false,
-                        ),
-                        _buildSummaryRow(
-                          'کل دستمزد:',
-                          totalEarned.toPriceString(),
-                          Colors.green,
-                          icon: Icons.attach_money,
-                        ),
-                        _buildSummaryRow(
-                          'کل دریافتی:',
-                          totalPayments.toPriceString(),
-                          Colors.blue,
-                          icon: Icons.payments,
-                        ),
-                        const Divider(),
-                        _buildSummaryRow(
-                          'تراز حساب:',
-                          balance.toPriceString(),
-                          balance >= 0 ? Colors.green : Colors.red,
-                          icon: balance >= 0
-                              ? Icons.trending_up
-                              : Icons.trending_down,
-                        ),
-                        const SizedBox(height: 8),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 500),
-                          transitionBuilder: (child, animation) =>
-                              FadeTransition(opacity: animation, child: child),
-                          child: Container(
-                            key: ValueKey(balance >= 0),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: balance >= 0
-                                    ? [
-                                        Colors.green.shade50,
-                                        Colors.green.shade100,
-                                      ]
-                                    : [Colors.red.shade50, Colors.red.shade100],
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      (balance >= 0 ? Colors.green : Colors.red)
-                                          .withValues(alpha: 0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                              border: Border.all(
-                                color: balance >= 0 ? Colors.green : Colors.red,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  balance >= 0
-                                      ? Icons.trending_up
-                                      : Icons.trending_down,
-                                  color: balance >= 0
-                                      ? Colors.green
-                                      : Colors.red,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  balance >= 0
-                                      ? 'شما طلبکار هستید'
-                                      : 'شما بدهکار هستید',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: balance >= 0
-                                        ? Colors.green
-                                        : Colors.red,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
+                        const SizedBox(height: 12),
+                        ...employersToDisplay.map((entry) {
+                          final employer = entry.value;
+                          final employerId = entry.key;
 
-              // Per Employer Breakdown with Slide Animation & InkWell
-              if (employersController.employers.isNotEmpty) ...[
-                Row(
-                  children: [
-                    const Icon(Icons.groups, color: Colors.blue, size: 22),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'جزئیات به تفکیک کارفرما',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ...employersController.employers.map((entry) {
-                  final employer = entry.value;
-                  final employerId = entry.key;
-                  final employerWorkdays = workdaysMap.values
-                      .where(
-                        (workday) =>
+                          /// محاسبه روزهای کاری برای کارفرمای خاص.
+                          final employerWorkdays = workdaysMap.values
+                              .where(
+                                (workday) =>
                             workday.employerId == employerId &&
-                            workday.worked &&
-                            _isInRange(workday.jalaliDate),
-                      )
-                      .fold<double>(
-                        0,
-                        (sum, workday) => sum + (workday.hours / 8),
-                      );
-                  final employerEarn = workdaysMap.values
-                      .where(
-                        (workday) =>
+                                workday.worked &&
+                                _isInSelectedMonths(workday.jalaliDate),
+                          )
+                              .fold<double>(
+                            0,
+                                (sum, workday) => sum + (workday.hours / 8),
+                          );
+
+                          /// محاسبه دستمزد برای کارفرمای خاص.
+                          final employerEarn = workdaysMap.values
+                              .where(
+                                (workday) =>
                             workday.employerId == employerId &&
-                            _isInRange(workday.jalaliDate),
-                      )
-                      .fold<int>(
-                        0,
-                        (sum, workday) => sum + (workday.wage ?? 0),
-                      );
-                  final employerPayments = paymentsController.payments
-                      .where(
-                        (p) =>
+                                _isInSelectedMonths(workday.jalaliDate),
+                          )
+                              .fold<int>(
+                            0,
+                                (sum, workday) => sum + (workday.wage ?? 0),
+                          );
+
+                          /// محاسبه دریافتی‌ها برای کارفرمای خاص.
+                          final employerPayments = paymentsController.payments
+                              .where(
+                                (p) =>
                             p.value.employerId == employerId &&
-                            _isInRange(p.value.jalaliDate),
-                      )
-                      .fold<int>(0, (sum, p) => sum + p.value.amount);
-                  final employerBalance = employerEarn - employerPayments;
-                  return TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 0, end: 1),
-                    duration: const Duration(milliseconds: 600),
-                    builder: (context, value, child) {
-                      return Opacity(
-                        opacity: value,
-                        child: Transform.translate(
-                          offset: Offset((1 - value) * 40, 0),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      splashColor: Colors.blue.shade100,
-                      onTap: () {
-                        // امکان افزودن دیالوگ یا جزئیات بیشتر
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: Text(employer.name),
-                            content: Text(
-                              'روزهای کاری: $employerWorkdays\nدستمزد: ${employerEarn.toPriceString()} تومان\nدریافتی: ${employerPayments.toPriceString()} تومان',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(),
-                                child: const Text('بستن'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.person,
-                                    color: Colors.blue,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    employer.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              _buildSummaryRow(
-                                'روزهای کاری:',
-                                employerWorkdays % 1 == 0
-                                    ? employerWorkdays.toInt().toString()
-                                    : employerWorkdays.toStringAsFixed(1),
-                                Colors.orange,
-                                fontSize: 14,
-                                icon: Icons.calendar_today,
-                                showCurrency: false,
-                              ),
-                              _buildSummaryRow(
-                                'دستمزد:',
-                                employerEarn.toPriceString(),
-                                Colors.green,
-                                fontSize: 14,
-                                icon: Icons.attach_money,
-                              ),
-                              _buildSummaryRow(
-                                'دریافتی:',
-                                employerPayments.toPriceString(),
-                                Colors.blue,
-                                fontSize: 14,
-                                icon: Icons.payments,
-                              ),
-                              _buildSummaryRow(
-                                'تراز حساب:',
-                                employerBalance.toPriceString(),
-                                employerBalance >= 0
-                                    ? Colors.green
-                                    : Colors.red,
-                                fontSize: 14,
-                                icon: employerBalance >= 0
-                                    ? Icons.trending_up
-                                    : Icons.trending_down,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ],
-            ],
-          ),
-        );
-      }),
+                                _isInSelectedMonths(p.value.jalaliDate),
+                          )
+                              .fold<int>(0, (sum, p) => sum + p.value.amount);
+
+                          /// محاسبه تراز حساب برای کارفرمای خاص.
+                          final employerBalance = employerEarn - employerPayments;
+
+                          return _employersCards(
+                            employerId,
+                            context,
+                            employer,
+                            employerWorkdays,
+                            employerEarn,
+                            employerPayments,
+                            employerBalance,
+                          );
+                        }),
+                      ],
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
+  /// ویجت کارت نمایش جزئیات هر کارفرما.
+  /// [employerId] شناسه کارفرما برای `ValueKey`.
+  /// [context] کانتکست ویجت.
+  /// [employer] شیء کارفرما.
+  /// [employerWorkdays] تعداد روزهای کاری برای این کارفرما.
+  /// [employerEarn] دستمزد کل برای این کارفرما.
+  /// [employerPayments] دریافتی کل از این کارفرما.
+  /// [employerBalance] تراز حساب برای این کارفرما.
+  Widget _employersCards(
+      int employerId,
+      BuildContext context,
+      Employer employer,
+      double employerWorkdays,
+      int employerEarn,
+      int employerPayments,
+      int employerBalance,
+      ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: TweenAnimationBuilder<double>(
+        key: ValueKey(employerId),
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 600),
+        builder: (BuildContext context, double value, Widget? child) {
+          return Opacity(
+            opacity: value,
+            child: Transform.translate(
+              offset: Offset((1 - value) * 40, 0),
+              child: child,
+            ),
+          );
+        },
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          splashColor: Colors.blue.shade100,
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (BuildContext ctx) => AlertDialog(
+                title: Text(employer.name),
+                content: Text(
+                  'روزهای کاری: $employerWorkdays\nدستمزد: ${employerEarn.toPriceString()} تومان\nدریافتی: ${employerPayments.toPriceString()} تومان',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('بستن'),
+                  ),
+                ],
+              ),
+            );
+          },
+          child: Card(
+            margin: const EdgeInsets.all(4),
+            elevation: 5,
+            shadowColor: context.theme.dividerColor.withAlpha(100),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: context.theme.dividerColor.withAlpha(100),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.person,
+                        color: Colors.blue,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        employer.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildSummaryRow(
+                    'روزهای کاری:',
+                    employerWorkdays % 1 == 0
+                        ? employerWorkdays.toInt().toString()
+                        : employerWorkdays.toStringAsFixed(1),
+                    Colors.orange,
+                    fontSize: 14,
+                    icon: Icons.calendar_today,
+                    showCurrency: false,
+                  ),
+                  _buildSummaryRow(
+                    'دستمزد:',
+                    employerEarn.toPriceString(),
+                    Colors.green,
+                    fontSize: 14,
+                    icon: Icons.attach_money,
+                  ),
+                  _buildSummaryRow(
+                    'دریافتی:',
+                    employerPayments.toPriceString(),
+                    Colors.blue,
+                    fontSize: 14,
+                    icon: Icons.payments,
+                  ),
+                  _buildSummaryRow(
+                    'تراز حساب:',
+                    employerBalance.toPriceString(),
+                    employerBalance >= 0 ? Colors.green : Colors.red,
+                    fontSize: 14,
+                    icon: employerBalance >= 0
+                        ? Icons.trending_up
+                        : Icons.trending_down,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// ویجت کارت نمایش خلاصه‌ی کلی اطلاعات.
+  /// [context] کانتکست ویجت.
+  /// [overallWorkedDays] کل روزهای کاری محاسبه شده.
+  /// [overallTotalEarned] کل دستمزد کسب شده.
+  /// [overallTotalPayments] کل دریافتی‌ها.
+  /// [overallBalance] تراز کلی حساب.
+  Widget _sumDataCard(
+      BuildContext context,
+      double overallWorkedDays,
+      int overallTotalEarned,
+      int overallTotalPayments,
+      int overallBalance,
+      ) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 700),
+      builder: (BuildContext context, double value, Widget? child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 30),
+            child: child,
+          ),
+        );
+      },
+      child: Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: context.theme.dividerColor.withAlpha(100),
+          ),
+        ),
+        shadowColor: Colors.green.shade100,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(
+                    Icons.account_balance_wallet,
+                    color: Colors.green,
+                    size: 28,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'خلاصه کلی',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildSummaryRow(
+                'تعداد روز کاری:',
+                overallWorkedDays % 1 == 0
+                    ? overallWorkedDays.toInt().toString()
+                    : overallWorkedDays.toStringAsFixed(1),
+                Colors.orange,
+                icon: Icons.calendar_today,
+                showCurrency: false,
+              ),
+              _buildSummaryRow(
+                'کل دستمزد:',
+                overallTotalEarned.toPriceString(),
+                Colors.green,
+                icon: Icons.attach_money,
+              ),
+              _buildSummaryRow(
+                'کل دریافتی:',
+                overallTotalPayments.toPriceString(),
+                Colors.blue,
+                icon: Icons.payments,
+              ),
+              const Divider(),
+              _buildSummaryRow(
+                'تراز حساب:',
+                overallBalance.toPriceString(),
+                overallBalance >= 0 ? Colors.green : Colors.red,
+                icon: overallBalance >= 0
+                    ? Icons.trending_up
+                    : Icons.trending_down,
+              ),
+              const SizedBox(height: 8),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                transitionBuilder: (Widget child, Animation<double> animation) =>
+                    FadeTransition(opacity: animation, child: child),
+                child: Container(
+                  key: ValueKey(overallBalance >= 0),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: overallBalance >= 0
+                          ? [
+                        Colors.green.shade50!,
+                        Colors.green.shade100!,
+                      ]
+                          : [Colors.red.shade50!, Colors.red.shade100!],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color:
+                        (overallBalance >= 0 ? Colors.green : Colors.red)
+                            .withAlpha(10),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: overallBalance >= 0 ? Colors.green : Colors.red,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        overallBalance >= 0
+                            ? Icons.trending_up
+                            : Icons.trending_down,
+                        color: overallBalance >= 0 ? Colors.green : Colors.red,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        overallBalance >= 0 ? 'شما طلبکار هستید' : 'شما بدهکار هستید',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: overallBalance >= 0 ? Colors.green : Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// ویجت سطر خلاصه اطلاعات.
+  /// [label] عنوان سطر (مثلاً "کل دستمزد").
+  /// [value] مقدار مربوطه.
+  /// [color] رنگ متن و آیکون.
+  /// [fontSize] سایز فونت (پیش‌فرض 16).
+  /// [icon] آیکون نمایش داده شده در کنار label.
+  /// [showCurrency] آیا "تومان" نمایش داده شود یا "روز" (پیش‌فرض true).
   Widget _buildSummaryRow(
-    String label,
-    String value,
-    Color color, {
-    double fontSize = 16,
-    IconData? icon,
-    bool showCurrency = true,
-  }) {
+      String label,
+      String value,
+      Color color, {
+        double fontSize = 16,
+        IconData? icon,
+        bool showCurrency = true,
+      }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(

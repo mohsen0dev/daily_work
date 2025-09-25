@@ -86,6 +86,23 @@ class _DayFormPageState extends State<DayFormPage> {
           ),
         ],
       ),
+      floatingActionButton:   SizedBox(
+        width:MediaQuery.of(context).size.width/1.5,
+        height: 50,
+        child: FilledButton(
+
+          onPressed: _saveWorkDay,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+          child: Text(
+            existingWorkDay != null ? 'بروزرسانی' : 'ذخیره',
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+      ),
+floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -116,7 +133,7 @@ class _DayFormPageState extends State<DayFormPage> {
                     children: [
                       Row(
                         children: const [
-                          Icon(Icons.work, color: Colors.orange, size: 24),
+                          Icon(Icons.work, color: Colors.blue, size: 24),
                           SizedBox(width: 8),
                           Text(
                             'وضعیت کار',
@@ -137,7 +154,7 @@ class _DayFormPageState extends State<DayFormPage> {
                             worked = value;
                           });
                         },
-                        activeColor: Colors.orange,
+                        activeColor: Colors.blue,
                       ),
                     ],
                   ),
@@ -340,19 +357,19 @@ class _DayFormPageState extends State<DayFormPage> {
             const SizedBox(height: 32),
 
             // Save Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saveWorkDay,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: Text(
-                  existingWorkDay != null ? 'بروزرسانی' : 'ذخیره',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
+            // SizedBox(
+            //   width: double.infinity,
+            //   child: ElevatedButton(
+            //     onPressed: _saveWorkDay,
+            //     style: ElevatedButton.styleFrom(
+            //       padding: const EdgeInsets.symmetric(vertical: 16),
+            //     ),
+            //     child: Text(
+            //       existingWorkDay != null ? 'بروزرسانی' : 'ذخیره',
+            //       style: const TextStyle(fontSize: 16),
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
@@ -401,13 +418,6 @@ class _DayFormPageState extends State<DayFormPage> {
       });
       isValid = false;
     }
-    // همچنین می‌توانید برای wageValue <= 0 هم خطا در نظر بگیرید اگر منطقی باشد
-    // if (worked && wageValue != null && wageValue <= 0) {
-    //   setState(() {
-    //     _wageErrorText = 'مبلغ دستمزد باید بیشتر از صفر باشد';
-    //   });
-    //   isValid = false;
-    // }
 
     // اگر اعتبارسنجی موفقیت آمیز نبود، از ادامه کار جلوگیری کن
     if (!isValid) {

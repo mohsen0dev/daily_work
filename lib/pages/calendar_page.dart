@@ -190,7 +190,7 @@ class _DayCell extends StatelessWidget {
           '${jd.day}',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: worked ? Colors.blue.shade900 : Colors.black,
+            color: worked ? Colors.blue.shade900 : null,
             fontSize: worked ? 16 : 14,
           ),
         ),

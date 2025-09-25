@@ -1,4 +1,4 @@
-// removed unused developer import
+// D:/flutter_project/daily_work/lib/pages/payments_page.dart
 
 import 'package:daily_work/utils/formater.dart';
 import 'package:daily_work/utils/price_format.dart';
@@ -12,12 +12,21 @@ import 'package:persian_datetime_picker/persian_datetime_picker.dart' as p;
 import '../controllers/payments_controller.dart';
 import '../controllers/employers_controller.dart';
 import '../models/payment.dart';
+import '../widgets/shared_filter_bar.dart';
 
+/// کلاس PaymentSummary برای نگهداری خلاصه دریافتی‌ها.
+/// شامل عنوان (مثلاً "کل دریافتی‌ها" یا نام کارفرما)، مجموع مبالغ، و لیست دریافتی‌های مرتبط.
 class PaymentSummary {
+  /// عنوان خلاصه.
   final String title;
+
+  /// مجموع مبالغ دریافتی.
   final int total;
+
+  /// لیست دریافتی‌های مرتبط با این خلاصه.
   final List<MapEntry<dynamic, Payment>> payments;
 
+  /// سازنده PaymentSummary.
   PaymentSummary({
     required this.title,
     required this.total,
@@ -25,35 +34,58 @@ class PaymentSummary {
   });
 }
 
+/// صفحه نمایش لیست دریافتی‌ها و خلاصه‌ی آن‌ها.
+/// امکان فیلتر کردن بر اساس کارفرما و بازه زمانی (ماهیانه) را فراهم می‌کند.
 class PaymentsPage extends StatefulWidget {
+  /// سازنده PaymentsPage.
   const PaymentsPage({super.key});
 
   @override
   State<PaymentsPage> createState() => _PaymentsPageState();
 }
 
+/// State مربوط به ویجت PaymentsPage.
 class _PaymentsPageState extends State<PaymentsPage> {
-  int? selectedEmployerId;
-  sh.Jalali? selectedStartDate;
-  sh.Jalali? selectedEndDate;
-
-  bool _isInRange(String jalaliDate) {
-    if (selectedStartDate == null || selectedEndDate == null) return true;
-    final date = JalaliUtils.parseJalali(jalaliDate);
-    return !date.isBefore(selectedStartDate!) &&
-        !date.isAfter(selectedEndDate!);
+  /// مقداردهی اولیه State.
+  /// فیلتر تاریخ را به صورت پیش‌فرض روی ماه جاری تنظیم می‌کند.
+  @override
+  void initState() {
+    super.initState();
+    _setDefaultMonthFilter();
   }
 
-  List<PaymentSummary> _getPaymentSummaries(
-    List<MapEntry<dynamic, Payment>> payments,
-    EmployersController employersController,
-  ) {
-    final totalSummary = PaymentSummary(
-      title: 'کل دریافتی‌ها',
-      total: payments.fold(0, (sum, entry) => sum + entry.value.amount),
-      payments: payments,
-    );
+  /// تنظیم فیلتر ماه به صورت پیش‌فرض روی ماه جاری.
+  void _setDefaultMonthFilter() {
+    final now = sh.Jalali.now();
+    setState(() {
+      selectedMonths = [sh.Jalali(now.year, now.month, 1)];
+    });
+  }
 
+  /// شناسه کارفرمای انتخاب شده. اگر null باشد، همه کارفرماها را شامل می‌شود.
+  int? selectedEmployerId;
+
+  /// لیستی از ماه‌های انتخاب شده برای فیلتر.
+  List<sh.Jalali> selectedMonths = [];
+
+  /// بررسی می‌کند که آیا تاریخ جلالی ورودی در بین ماه‌های انتخاب شده قرار دارد یا خیر.
+  /// [jalaliDate] تاریخ جلالی به فرمت رشته.
+  /// برمی‌گرداند true اگر تاریخ در بازه باشد یا هیچ ماهی انتخاب نشده باشد، در غیر این صورت false.
+  bool _isInSelectedMonths(String jalaliDate) {
+    if (selectedMonths.isEmpty) return true;
+    final date = JalaliUtils.parseJalali(jalaliDate);
+    return selectedMonths.any((m) => m.year == date.year && m.month == date.month);
+  }
+
+  /// لیست ورودی دریافتی‌ها را بر اساس کارفرما گروه بندی می‌کند و خلاصه‌هایی برای هر کارفرما می‌سازد.
+  /// این متد خلاصه‌ی "کل دریافتی‌ها" را نمی‌سازد.
+  /// [payments] لیستی از MapEntryهای دریافتی (Payment).
+  /// [employersController] کنترلر کارفرماها برای دریافت نام کارفرما.
+  /// برمی‌گرداند لیستی از PaymentSummary برای هر کارفرما.
+  List<PaymentSummary> _getEmployerPaymentSummaries(
+      List<MapEntry<dynamic, Payment>> payments,
+      EmployersController employersController,
+      ) {
     final Map<int?, List<MapEntry<dynamic, Payment>>> groupedPayments = {};
     for (var entry in payments) {
       final employerId = entry.value.employerId;
@@ -63,13 +95,11 @@ class _PaymentsPageState extends State<PaymentsPage> {
       groupedPayments[employerId]!.add(entry);
     }
 
-    final List<PaymentSummary> employerSummaries = groupedPayments.entries.map((
-      e,
-    ) {
+    final List<PaymentSummary> employerSummaries = groupedPayments.entries.map((e) {
       String title = 'نامشخص';
       if (e.key != null) {
         final employerEntry = employersController.employers.firstWhereOrNull(
-          (emp) => emp.key == e.key,
+              (emp) => emp.key == e.key,
         );
         if (employerEntry != null) {
           title = employerEntry.value.name;
@@ -82,289 +112,281 @@ class _PaymentsPageState extends State<PaymentsPage> {
       );
     }).toList();
 
-    return [totalSummary, ...employerSummaries];
+    return employerSummaries;
   }
 
+  /// ساختار اصلی UI صفحه دریافتی‌ها.
   @override
   Widget build(BuildContext context) {
-    final PaymentsController paymentsController =
-        Get.find<PaymentsController>();
-    final EmployersController employersController =
-        Get.find<EmployersController>();
+    final PaymentsController paymentsController = Get.find<PaymentsController>();
+    final EmployersController employersController = Get.find<EmployersController>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('دریافتی‌ها'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.copy),
-            tooltip: 'کپی CSV',
-            onPressed: () => _copyCsv(paymentsController, employersController),
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showAddPaymentDialog(
-              context,
-              paymentsController,
-              employersController,
-            ),
-          ),
-        ],
+      backgroundColor: Theme.of(context).secondaryHeaderColor.withAlpha(370),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () => _showAddPaymentDialog(
+          context,
+          paymentsController,
+          employersController,
+        ),
       ),
-      body: Obx(() {
-        final filtered = paymentsController.payments
-            .where(
-              (e) =>
-                  (selectedEmployerId == null ||
-                      e.value.employerId == selectedEmployerId) &&
-                  _isInRange(e.value.jalaliDate),
-            )
-            .toList();
-        if (filtered.isEmpty) {
-          return const Center(child: Text('هیچ دریافتی ثبت نشده است'));
-        }
-
-        final summaries = _getPaymentSummaries(filtered, employersController);
-
-        return ListView.builder(
-          itemCount: summaries.length,
-          itemBuilder: (context, index) {
-            final summary = summaries[index];
-
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              elevation: 4,
-              color: index == 0
-                  ? Colors.green[100]
-                  : index.isEven
-                  ? Colors.amberAccent[100]
-                  : Colors.blue[100],
-              child: ExpansionTile(
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          summary.title,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          '${summary.total.toString().toPriceString()} تومان',
-                          style: const TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                children: summary.payments.map((entry) {
-                  final payment = entry.value;
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    elevation: 4,
-                    child: ListTile(
-                      leading: const Icon(Icons.payments, color: Colors.green),
-                      title: Text(
-                        '${payment.amount.toString().toPriceString()} تومان',
-                        style: const TextStyle(color: Colors.green),
-                      ),
-                      subtitle: Text(
-                        (() {
-                          String employerName = 'نامشخص';
-                          if (payment.employerId != null) {
-                            final employer = employersController.employers
-                                .firstWhereOrNull(
-                                  (e) => e.key == payment.employerId,
-                                );
-                            if (employer != null) {
-                              employerName = employer.value.name;
-                            }
-                          }
-                          final dateStr = payment.jalaliDate;
-                          return 'کارفرما: $employerName\n$dateStr';
-                        })(),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () => _showEditPaymentDialog(
-                              context,
-                              paymentsController,
-                              employersController,
-                              entry.key,
-                              payment,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _showDeleteConfirmDialog(
-                              context,
-                              paymentsController,
-                              entry.key,
-                              payment.amount,
-                            ),
-                          ),
-                        ],
-                      ),
-                      onTap: () => _showPaymentDetails(
-                        context,
-                        payment,
-                        employersController,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            );
-          },
-        );
-      }),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(
+      body: SafeArea(
+        child: Column(
           children: [
-            // const Icon(Icons.filter_list),
-            // const SizedBox(width: 8),
+            /// ویجت نوار فیلتر مشترک برای انتخاب کارفرما و ماه.
+            SharedFilterBar(
+              employersController: employersController,
+              initialSelectedEmployerId: selectedEmployerId,
+              initialSelectedMonths: selectedMonths,
+              onEmployerChanged: (newId) {
+                setState(() => selectedEmployerId = newId);
+              },
+              onDateFilterChanged: (newMonths) {
+                setState(() => selectedMonths = newMonths);
+              },
+            ),
             Expanded(
-              child: DropdownButtonFormField<int?>(
-                borderRadius: BorderRadius.circular(10),
-                value: selectedEmployerId,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'فیلتر کارفرما',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
-                ),
-                items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('همه کارفرماها'),
-                  ),
-                  ...employersController.employers.map(
-                    (e) => DropdownMenuItem(
-                      value: e.key,
-                      child: Text(e.value.name),
-                    ),
-                  ),
-                ],
-                onChanged: (v) => setState(() => selectedEmployerId = v),
-              ),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(
-              height: 48,
-              child: OutlinedButton.icon(
-                style: ButtonStyle(
-                  shape: WidgetStatePropertyAll(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadiusGeometry.all(
-                        Radius.circular(10),
-                      ),
-                    ),
-                  ),
-                ),
-                icon: const Icon(Icons.date_range),
-                label: Text(
-                  selectedStartDate == null || selectedEndDate == null
-                      ? 'بازه تاریخ'
-                      : '${selectedStartDate!.year}/${selectedStartDate!.month.toString().padLeft(2, '0')}/${selectedStartDate!.day.toString().padLeft(2, '0')} - ${selectedEndDate!.year}/${selectedEndDate!.month.toString().padLeft(2, '0')}/${selectedEndDate!.day.toString().padLeft(2, '0')}',
-                  overflow: TextOverflow.ellipsis,
-                ),
-                onPressed: () async {
-                  final pRange =
-                      selectedStartDate == null || selectedEndDate == null
-                      ? null
-                      : p.JalaliRange(
-                          start: p.Jalali(
-                            selectedStartDate!.year,
-                            selectedStartDate!.month,
-                            selectedStartDate!.day,
-                          ),
-                          end: p.Jalali(
-                            selectedEndDate!.year,
-                            selectedEndDate!.month,
-                            selectedEndDate!.day,
-                          ),
-                        );
-                  final picked = await p.showPersianDateRangePicker(
-                    initialEntryMode: p.PersianDatePickerEntryMode.calendarOnly,
-                    context: context,
-                    firstDate: p.Jalali(1390, 1, 1),
-                    lastDate: p.Jalali.now(),
-                    initialDateRange: pRange,
-                    initialDate: pRange?.start ?? p.Jalali.now(),
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      selectedStartDate = sh.Jalali(
-                        picked.start.year,
-                        picked.start.month,
-                        picked.start.day,
+              child: Obx(() {
+                // مرحله ۱: فیلتر فقط بر اساس تاریخ برای کارت "کل دریافتی‌ها"
+                final dateFilteredPayments = paymentsController.payments
+                    .where((e) => _isInSelectedMonths(e.value.jalaliDate))
+                    .toList();
+
+                // اگر حتی برای تاریخ هم هیچ دریافتی وجود ندارد، کلاً پیام "هیچ دریافتی ثبت نشده" را نشان بده
+                if (dateFilteredPayments.isEmpty) {
+                  return const Center(child: Text('هیچ دریافتی ثبت نشده است'));
+                }
+
+                // ساخت خلاصه‌ی کلی به صورت دستی از لیست فیلتر شده با تاریخ
+                final totalSummary = PaymentSummary(
+                  title: 'کل دریافتی‌ها',
+                  total: dateFilteredPayments.fold(
+                      0, (sum, entry) => sum + entry.value.amount),
+                  payments: dateFilteredPayments,
+                );
+
+                // مرحله ۲: اعمال فیلتر کارفرما بر روی لیست بالا برای کارت‌های کارفرمایان
+                final fullyFilteredPayments = dateFilteredPayments
+                    .where((e) =>
+                selectedEmployerId == null ||
+                    e.value.employerId == selectedEmployerId)
+                    .toList();
+
+                // ساخت خلاصه‌های کارفرمایان از لیست کاملاً فیلتر شده
+                final employerSummaries = _getEmployerPaymentSummaries(
+                    fullyFilteredPayments, employersController);
+
+                // لیست نهایی خلاصه‌ها برای رندر شدن (شامل کارت کلی و کارت‌های کارفرما)
+                final List<PaymentSummary> summariesToRender = [totalSummary];
+
+                // بررسی اینکه آیا نیاز به نمایش پیام "تراکنشی برای این کارفرما ثبت نشده" هست
+                final bool showNoEmployerPaymentsMessage =
+                    selectedEmployerId != null && fullyFilteredPayments.isEmpty;
+
+                // اگر کارفرمای خاصی انتخاب شده و تراکنشی برای او وجود ندارد، به لیست summariesToRender چیزی اضافه نمی‌کنیم.
+                // اگر کارفرمایی انتخاب نشده یا تراکنش برای کارفرمای انتخاب شده وجود دارد، خلاصه‌های کارفرما را اضافه می‌کنیم.
+                if (selectedEmployerId == null || fullyFilteredPayments.isNotEmpty) {
+                  summariesToRender.addAll(employerSummaries);
+                }
+
+                return ListView.builder(
+                  itemCount: summariesToRender.length + (showNoEmployerPaymentsMessage ? 1 : 0),
+                  itemBuilder: (BuildContext context, int index) {
+                    if (index == 0) {
+                      // آیتم اول همیشه کارت "کل دریافتی‌ها" است
+                      return _buildSummaryCard(
+                        context,
+                        summariesToRender[0],
+                        selectedEmployerId == null, // کارت کلی در حالت "همه کارفرماها" باز باشد
+                        index, // Index برای رنگ‌بندی
+                        employersController,
+                        paymentsController,
                       );
-                      selectedEndDate = sh.Jalali(
-                        picked.end.year,
-                        picked.end.month,
-                        picked.end.day,
+                    } else if (showNoEmployerPaymentsMessage && index == 1) {
+                      // اگر پیام "تراکنشی یافت نشد" باید نمایش داده شود و این آیتم دوم است
+                      return Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: SizedBox(
+                          height: 150,
+                          child: Center(
+                            child: Text(
+                              'تراکنشی برای این کارفرما در بازه انتخاب شده ثبت نشده است',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ),
+                        ),
                       );
-                    });
-                  }
-                },
-              ),
+                    } else {
+                      // باقی آیتم‌ها کارت‌های خلاصه‌ی کارفرماها هستند
+                      // ایندکس را به خاطر جایگاه احتمالی پیام "تراکنشی یافت نشد" تنظیم می‌کنیم
+                      final int actualSummaryIndex = index - (showNoEmployerPaymentsMessage ? 1 : 0);
+                      return _buildSummaryCard(
+                        context,
+                        summariesToRender[actualSummaryIndex],
+                        false, // کارت‌های کارفرما به صورت پیش‌فرض بسته باشند
+                        index, // Index برای رنگ‌بندی
+                        employersController,
+                        paymentsController,
+                      );
+                    }
+                  },
+                );
+              }),
             ),
-            // const SizedBox(width: 12),
-            if (selectedStartDate != null && selectedEndDate != null)
-              IconButton(
-                tooltip: 'حذف بازه',
-                onPressed: () => setState(() {
-                  selectedStartDate = null;
-                  selectedEndDate = null;
-                }),
-                icon: const Icon(Icons.clear),
-              ),
           ],
         ),
       ),
     );
   }
 
+  /// متد کمکی برای ساخت کارت خلاصه (کارت کلی یا کارت کارفرما).
+  /// [context] کانتکست ویجت.
+  /// [summary] شیء PaymentSummary حاوی اطلاعات خلاصه.
+  /// [initiallyExpanded] آیا کارت در ابتدا باز باشد یا خیر.
+  /// [cardIndex] ایندکس کارت در لیست برای تعیین رنگ‌بندی.
+  /// [employersController] کنترلر کارفرماها.
+  /// [paymentsController] کنترلر دریافتی‌ها.
+  Widget _buildSummaryCard(
+      BuildContext context,
+      PaymentSummary summary,
+      bool initiallyExpanded,
+      int cardIndex, // اضافه شدن cardIndex برای رنگ‌بندی
+      EmployersController employersController, // اضافه شدن کنترلرها
+      PaymentsController paymentsController,
+      ) {
+    // منطق رنگ‌بندی کارت بر اساس ایندکس در لیست رندر شده
+    Color? cardColor;
+    if (cardIndex == 0) {
+      cardColor = Colors.green[100];
+    } else {
+      cardColor = cardIndex.isEven ? Colors.amberAccent[100] : Colors.blue[100];
+    }
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      elevation: 4,
+      color: cardColor,
+      child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              summary.title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              '${summary.total.toString().toPriceString()} تومان',
+              style: const TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        children: summary.payments.map((entry) {
+          final payment = entry.value;
+          return Card(
+            margin: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 2,
+            ),
+            elevation: 4,
+            child: ListTile(
+              leading: const Icon(Icons.payments, color: Colors.green),
+              title: Text(
+                '${payment.amount.toString().toPriceString()} تومان',
+                style: const TextStyle(color: Colors.green),
+              ),
+              subtitle: Text(
+                (() {
+                  String employerName = 'نامشخص';
+                  if (payment.employerId != null) {
+                    final employer = employersController
+                        .employers
+                        .firstWhereOrNull(
+                          (e) => e.key == payment.employerId,
+                    );
+                    if (employer != null) {
+                      employerName = employer.value.name;
+                    }
+                  }
+                  final String dateStr = payment.jalaliDate;
+                  return 'کارفرما: $employerName\n$dateStr';
+                })(),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: () => _showEditPaymentDialog(
+                      context,
+                      paymentsController,
+                      employersController,
+                      entry.key,
+                      payment,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _showDeleteConfirmDialog(
+                      context,
+                      paymentsController,
+                      entry.key,
+                      payment.amount,
+                    ),
+                  ),
+                ],
+              ),
+              onTap: () => _showPaymentDetails(
+                context,
+                payment,
+                employersController,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  /// کپی کردن خروجی CSV دریافتی‌های فیلتر شده به کلیپ‌بورد.
+  /// [paymentsController] کنترلر دریافتی‌ها.
+  /// [employersController] کنترلر کارفرماها.
   void _copyCsv(
-    PaymentsController paymentsController,
-    EmployersController employersController,
-  ) async {
-    final rows = <String>[];
+      PaymentsController paymentsController,
+      EmployersController employersController,
+      ) async {
+    final List<String> rows = <String>[];
     rows.add('amount,employer,date,note');
-    final filtered = paymentsController.payments
+    final List<MapEntry<dynamic, Payment>> filtered = paymentsController.payments
         .where(
           (e) =>
-              (selectedEmployerId == null ||
-                  e.value.employerId == selectedEmployerId) &&
-              _isInRange(e.value.jalaliDate),
-        )
+      (selectedEmployerId == null ||
+          e.value.employerId == selectedEmployerId) &&
+          _isInSelectedMonths(e.value.jalaliDate),
+    )
         .toList();
     for (final entry in filtered) {
-      final p = entry.value;
+      final Payment p = entry.value;
       String employerName = 'نامشخص';
       if (p.employerId != null) {
         final emp = employersController.employers.firstWhereOrNull(
-          (e) => e.key == p.employerId,
+              (e) => e.key == p.employerId,
         );
         if (emp != null) employerName = emp.value.name;
       }
-      final date = p.jalaliDate;
-      final note = (p.note ?? '').replaceAll(',', ' ');
+      final String date = p.jalaliDate;
+      final String note = (p.note ?? '').replaceAll(',', ' ');
       rows.add('${p.amount},$employerName,$date,$note');
     }
-    final csv = rows.join('\n');
+    final String csv = rows.join('\n');
     await Clipboard.setData(ClipboardData(text: csv));
     if (mounted) {
       Get.snackbar(
@@ -375,29 +397,31 @@ class _PaymentsPageState extends State<PaymentsPage> {
     }
   }
 
+  /// نمایش دیالوگ ویرایش یک دریافتی.
+  /// [context] کانتکست ویجت.
+  /// [paymentsController] کنترلر دریافتی‌ها.
+  /// [employersController] کنترلر کارفرماها.
+  /// [paymentKey] کلید (Key) دریافتی در Hive/دیتابیس.
+  /// [payment] شیء Payment برای ویرایش.
   void _showEditPaymentDialog(
-    BuildContext context,
-    PaymentsController paymentsController,
-    EmployersController employersController,
-    dynamic paymentKey,
-    Payment payment,
-  ) {
-    final amountController = TextEditingController(
+      BuildContext context,
+      PaymentsController paymentsController,
+      EmployersController employersController,
+      dynamic paymentKey,
+      Payment payment,
+      ) {
+    final TextEditingController amountController = TextEditingController(
       text: payment.amount.toString().toPriceString(),
     );
-    final noteController = TextEditingController(text: payment.note ?? '');
+    final TextEditingController noteController = TextEditingController(text: payment.note ?? '');
     sh.Jalali selectedDate = JalaliUtils.parseJalali(payment.jalaliDate);
-    int? selectedEmployerId =
-        payment.employerId; // مقدار اولیه از payment گرفته می‌شود
-
-    // اضافه کردن یک متغیر برای نگهداری وضعیت خطا
+    int? selectedEmployerId = payment.employerId;
     String? employerErrorText;
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          // تغییر نام setState
+      builder: (BuildContext context) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setStateDialog) => AlertDialog(
           title: const Text('ویرایش دریافتی'),
           content: SingleChildScrollView(
             child: Column(
@@ -405,6 +429,8 @@ class _PaymentsPageState extends State<PaymentsPage> {
               children: [
                 TextField(
                   controller: amountController,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
                     labelText: 'مبلغ (تومان) *',
                     border: OutlineInputBorder(),
@@ -415,27 +441,24 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 DropdownButtonFormField<int?>(
                   value: selectedEmployerId,
                   decoration: InputDecoration(
-                    // اضافه کردن InputDecoration برای نمایش خطا
-                    labelText: 'کارفرما *', // نشانه‌گذاری به عنوان فیلد ضروری
+                    labelText: 'کارفرما *',
                     border: const OutlineInputBorder(),
-                    errorText: employerErrorText, // نمایش متن خطا
+                    errorText: employerErrorText,
                   ),
                   items: [
-                    // اگر میخواهید "همه کارفرماها" به عنوان یک placeholder باشد:
-                    const DropdownMenuItem(
-                      value: null, // مقدار null برای این گزینه
-                      child: Text('انتخاب کنید...'), // یا "هیچکدام"
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('انتخاب کنید...'),
                     ),
                     ...employersController.employers.map((entry) {
-                      return DropdownMenuItem(
+                      return DropdownMenuItem<int?>(
                         value: entry.key,
                         child: Text(entry.value.name),
                       );
                     }),
                   ],
-                  onChanged: (value) {
+                  onChanged: (int? value) {
                     setStateDialog(() {
-                      // استفاده از setStateDialog
                       selectedEmployerId = value;
                       if (value != null) {
                         employerErrorText = null;
@@ -450,7 +473,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                   ),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
-                    final picked = await p.showPersianDatePicker(
+                    final p.Jalali? picked = await p.showPersianDatePicker(
                       context: context,
                       initialDate: p.Jalali(
                         selectedDate.year,
@@ -490,29 +513,25 @@ class _PaymentsPageState extends State<PaymentsPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                final amount = int.tryParse(
+                final int? amount = int.tryParse(
                   amountController.text.replaceAll(',', '').trim(),
                 );
 
-                // بررسی اینکه آیا کارفرما انتخاب شده است
                 if (selectedEmployerId == null) {
                   setStateDialog(() {
-                    // استفاده از setStateDialog برای نمایش خطا
                     employerErrorText = 'لطفا یک کارفرما انتخاب کنید';
                   });
-                  return; // از ادامه اجرای تابع جلوگیری کنید
+                  return;
                 } else {
                   setStateDialog(() {
-                    // اگر انتخاب شده بود، خطا را پاک کنید
                     employerErrorText = null;
                   });
                 }
 
                 if (amount != null && amount > 0) {
-                  final editedPayment = Payment(
+                  final Payment editedPayment = Payment(
                     jalaliDate: JalaliUtils.formatFromJalali(selectedDate),
-                    employerId:
-                        selectedEmployerId, // حالا مطمئن هستیم که null نیست
+                    employerId: selectedEmployerId,
                     amount: amount,
                     note: noteController.text.trim().isEmpty
                         ? null
@@ -538,15 +557,19 @@ class _PaymentsPageState extends State<PaymentsPage> {
     );
   }
 
+  /// نمایش دیالوگ جزئیات یک دریافتی.
+  /// [context] کانتکست ویجت.
+  /// [payment] شیء Payment برای نمایش جزئیات.
+  /// [employersController] کنترلر کارفرماها برای دریافت نام کارفرما.
   void _showPaymentDetails(
-    BuildContext context,
-    Payment payment,
-    EmployersController employersController,
-  ) {
+      BuildContext context,
+      Payment payment,
+      EmployersController employersController,
+      ) {
     String employerName = 'نامشخص';
     if (payment.employerId != null) {
       final employer = employersController.employers.firstWhereOrNull(
-        (e) => e.key == payment.employerId,
+            (e) => e.key == payment.employerId,
       );
       if (employer != null) {
         employerName = employer.value.name;
@@ -555,7 +578,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (BuildContext ctx) => AlertDialog(
         title: Text('${payment.amount.toString().toPriceString()} تومان'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -576,24 +599,25 @@ class _PaymentsPageState extends State<PaymentsPage> {
     );
   }
 
+  /// نمایش دیالوگ افزودن یک دریافتی جدید.
+  /// [context] کانتکست ویجت.
+  /// [paymentsController] کنترلر دریافتی‌ها.
+  /// [employersController] کنترلر کارفرماها.
   void _showAddPaymentDialog(
-    BuildContext context,
-    PaymentsController paymentsController,
-    EmployersController employersController,
-  ) {
-    final amountController = TextEditingController();
-    final noteController = TextEditingController();
+      BuildContext context,
+      PaymentsController paymentsController,
+      EmployersController employersController,
+      ) {
+    final TextEditingController amountController = TextEditingController();
+    final TextEditingController noteController = TextEditingController();
     sh.Jalali selectedDate = sh.Jalali.now();
-    int? selectedEmployerId; // مقدار اولیه null است
-
-    // اضافه کردن یک متغیر برای نگهداری وضعیت خطا
+    int? selectedEmployerId;
     String? employerErrorText;
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          // تغییر نام setState به setStateDialog برای جلوگیری از تداخل
+      builder: (BuildContext context) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setStateDialog) => AlertDialog(
           title: const Text('افزودن دریافتی'),
           content: SingleChildScrollView(
             child: Column(
@@ -601,56 +625,42 @@ class _PaymentsPageState extends State<PaymentsPage> {
               children: [
                 TextField(
                   controller: amountController,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
                     labelText: 'مبلغ (تومان) *',
                     border: OutlineInputBorder(),
                   ),
                   inputFormatters: [ThousandSeparatorInputFormatter()],
-                  // keyboardType: TextInputType.number, // ThousandSeparatorInputFormatter خودش این را مدیریت می‌کند
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<int?>(
                   value: selectedEmployerId,
                   decoration: InputDecoration(
-                    // اضافه کردن InputDecoration برای نمایش خطا
-                    labelText: 'کارفرما *', // نشانه‌گذاری به عنوان فیلد ضروری
+                    labelText: 'کارفرما *',
                     border: const OutlineInputBorder(),
-                    errorText: employerErrorText, // نمایش متن خطا
+                    errorText: employerErrorText,
                   ),
                   items: [
-                    // آیتم "همه کارفرماها" را به عنوان یک گزینه قابل انتخاب در نظر نگیرید
-                    // یا اگر میخواهید باقی بماند، باید در منطق ذخیره سازی آن را مدیریت کنید.
-                    // برای سادگی، فعلا آن را حذف می کنیم یا به عنوان placeholder در نظر می گیریم
-                    // اگر میخواهید "همه کارفرماها" به عنوان یک placeholder باشد:
-                    const DropdownMenuItem(
-                      value: null, // مقدار null برای این گزینه
-                      child: Text(
-                        'انتخاب کنید...',
-                      ), // یا "هیچکدام" یا "کارفرما را انتخاب کنید"
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('انتخاب کنید...'),
                     ),
                     ...employersController.employers.map((entry) {
-                      return DropdownMenuItem(
+                      return DropdownMenuItem<int?>(
                         value: entry.key,
                         child: Text(entry.value.name),
                       );
                     }),
                   ],
-                  onChanged: (value) {
+                  onChanged: (int? value) {
                     setStateDialog(() {
-                      // استفاده از setStateDialog
                       selectedEmployerId = value;
-                      // وقتی کاربر چیزی انتخاب می‌کند، خطا را پاک کنید
                       if (value != null) {
                         employerErrorText = null;
                       }
                     });
                   },
-                  // validator: (value) { // همچنین می توانید از validator استفاده کنید
-                  //   if (value == null) {
-                  //     return 'لطفا یک کارفرما انتخاب کنید';
-                  //   }
-                  //   return null;
-                  // },
                 ),
                 const SizedBox(height: 16),
                 ListTile(
@@ -659,7 +669,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                   ),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
-                    final picked = await p.showPersianDatePicker(
+                    final p.Jalali? picked = await p.showPersianDatePicker(
                       context: context,
                       initialDate: p.Jalali(
                         selectedDate.year,
@@ -699,42 +709,33 @@ class _PaymentsPageState extends State<PaymentsPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                final amount = int.tryParse(
+                final int? amount = int.tryParse(
                   amountController.text.replaceAll(',', '').trim(),
                 );
 
-                // بررسی اینکه آیا کارفرما انتخاب شده است
                 if (selectedEmployerId == null) {
                   setStateDialog(() {
-                    // استفاده از setStateDialog برای نمایش خطا
                     employerErrorText = 'لطفا یک کارفرما انتخاب کنید';
                   });
-                  return; // از ادامه اجرای تابع جلوگیری کنید
+                  return;
                 } else {
                   setStateDialog(() {
-                    // اگر انتخاب شده بود، خطا را پاک کنید
                     employerErrorText = null;
                   });
                 }
 
                 if (amount != null && amount > 0) {
-                  final newPayment = Payment(
+                  final Payment newPayment = Payment(
                     jalaliDate: JalaliUtils.formatFromJalali(selectedDate),
-                    employerId:
-                        selectedEmployerId, // حالا مطمئن هستیم که null نیست
+                    employerId: selectedEmployerId,
                     amount: amount,
                     note: noteController.text.trim().isEmpty
                         ? null
                         : noteController.text.trim(),
                   );
                   paymentsController.addPayment(newPayment);
-                  print(
-                    'sabt tarikh= ${JalaliUtils.formatFromJalali(selectedDate)}',
-                  );
                   Navigator.pop(context);
                 } else {
-                  // اینجا می‌توانید برای مبلغ نامعتبر نیز پیغام خطا نمایش دهید
-                  // مثلا با استفاده از یک Snackbar یا تغییر border فیلد مبلغ
                   Get.snackbar(
                     'خطا',
                     'مبلغ وارد شده معتبر نیست.',
@@ -752,15 +753,20 @@ class _PaymentsPageState extends State<PaymentsPage> {
     );
   }
 
+  /// نمایش دیالوگ تأیید حذف یک دریافتی.
+  /// [context] کانتکست ویجت.
+  /// [controller] کنترلر دریافتی‌ها.
+  /// [key] کلید (Key) دریافتی در Hive/دیتابیس.
+  /// [amount] مبلغ دریافتی که قرار است حذف شود (برای نمایش در پیام تأیید).
   void _showDeleteConfirmDialog(
-    BuildContext context,
-    PaymentsController controller,
-    dynamic key,
-    int amount,
-  ) {
+      BuildContext context,
+      PaymentsController controller,
+      dynamic key,
+      int amount,
+      ) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (BuildContext context) => AlertDialog(
         title: const Text('تأیید حذف'),
         content: Text(
           'آیا مطمئن هستید که می‌خواهید دریافتی ${amount.toString()} تومان را حذف کنید؟',
@@ -782,6 +788,4 @@ class _PaymentsPageState extends State<PaymentsPage> {
       ),
     );
   }
-
-  // Replaced by JalaliUtils.formatJalali
 }

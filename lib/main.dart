@@ -4,7 +4,6 @@ import 'package:daily_work/controllers/wage_controller.dart';
 import 'package:daily_work/controllers/workdays_controller.dart';
 import 'package:daily_work/utils/back_button_handler.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -70,6 +69,8 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       title: 'Daily Work',
+      themeMode: ThemeMode.dark,
+      // darkTheme: ThemeData.dark(),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),

@@ -25,4 +25,5 @@ class JalaliUtils {
   static String nowAsString() {
     return formatFromJalali(sh.Jalali.now());
   }
+
 }

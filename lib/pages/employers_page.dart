@@ -84,7 +84,7 @@ class EmployersPage extends StatelessWidget {
                   ),
                   child: ListTile(
                     leading: const Icon(
-                      Icons.business,
+                      Icons.business_center_outlined,
                       color: Colors.blue,
                       size: 28,
                     ),
