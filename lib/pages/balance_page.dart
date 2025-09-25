@@ -428,10 +428,10 @@ class _BalancePageState extends State<BalancePage> {
                     gradient: LinearGradient(
                       colors: overallBalance >= 0
                           ? [
-                        Colors.green.shade50!,
-                        Colors.green.shade100!,
+                        Colors.green.shade50,
+                        Colors.green.shade100,
                       ]
-                          : [Colors.red.shade50!, Colors.red.shade100!],
+                          : [Colors.red.shade50, Colors.red.shade100],
                     ),
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
