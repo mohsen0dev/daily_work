@@ -1,4 +1,4 @@
-import 'package:shamsi_date/shamsi_date.dart' as sh;
+import 'package:persian_datetime_picker/persian_datetime_picker.dart' as sh;
 
 /// Utilities to work with Jalali dates
 class JalaliUtils {
@@ -25,5 +25,4 @@ class JalaliUtils {
   static String nowAsString() {
     return formatFromJalali(sh.Jalali.now());
   }
-
 }

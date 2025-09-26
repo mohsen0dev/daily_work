@@ -1,9 +1,9 @@
 import 'package:hive/hive.dart';
 
-part 'wage_settings.g.dart';
+part 'settings.g.dart';
 
 @HiveType(typeId: 4)
-class WageSettings extends HiveObject {
+class SettingsModel extends HiveObject {
   @HiveField(0)
   bool isDaily; // true = daily wage, false = hourly
 
@@ -13,5 +13,8 @@ class WageSettings extends HiveObject {
   @HiveField(2)
   int hourlyWage; // if hourly
 
-  WageSettings({this.isDaily = true, this.dailyWage = 0, this.hourlyWage = 0});
+  @HiveField(3)
+  bool isDarkMode ;
+
+  SettingsModel({this.isDaily = true, this.dailyWage = 0, this.hourlyWage = 0,this.isDarkMode=false});
 }

@@ -6,17 +6,17 @@ part of 'work_day.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
-class WorkDayAdapter extends TypeAdapter<WorkDay> {
+class WorkDayModelAdapter extends TypeAdapter<WorkDayModel> {
   @override
   final int typeId = 2;
 
   @override
-  WorkDay read(BinaryReader reader) {
+  WorkDayModel read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return WorkDay(
+    return WorkDayModel(
       jalaliDate: fields[0] as String,
       employerId: fields[1] as int?,
       worked: fields[2] as bool,
@@ -27,7 +27,7 @@ class WorkDayAdapter extends TypeAdapter<WorkDay> {
   }
 
   @override
-  void write(BinaryWriter writer, WorkDay obj) {
+  void write(BinaryWriter writer, WorkDayModel obj) {
     writer
       ..writeByte(6)
       ..writeByte(5)
@@ -50,7 +50,7 @@ class WorkDayAdapter extends TypeAdapter<WorkDay> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is WorkDayAdapter &&
+      other is WorkDayModelAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

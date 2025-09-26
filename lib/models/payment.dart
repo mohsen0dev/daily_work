@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 part 'payment.g.dart';
 
 @HiveType(typeId: 3)
-class Payment extends HiveObject {
+class PaymentModel extends HiveObject {
   // Store Jalali date as yyyy/MM/dd for Persian date persistence
   @HiveField(0)
   String jalaliDate;
@@ -17,7 +17,7 @@ class Payment extends HiveObject {
   @HiveField(3)
   String? note;
 
-  Payment({
+  PaymentModel({
     required this.jalaliDate,
     this.employerId,
     required this.amount,

@@ -4,9 +4,7 @@ import 'package:daily_work/utils/formater.dart';
 import 'package:daily_work/utils/price_format.dart';
 import 'package:daily_work/utils/jalali_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:shamsi_date/shamsi_date.dart' as sh;
 import 'package:persian_datetime_picker/persian_datetime_picker.dart' as p;
 
 import '../controllers/payments_controller.dart';
@@ -24,14 +22,10 @@ class PaymentSummary {
   final int total;
 
   /// لیست دریافتی‌های مرتبط با این خلاصه.
-  final List<MapEntry<dynamic, Payment>> payments;
+  final List<MapEntry<dynamic, PaymentModel>> payments;
 
   /// سازنده PaymentSummary.
-  PaymentSummary({
-    required this.title,
-    required this.total,
-    required this.payments,
-  });
+  PaymentSummary({required this.title, required this.total, required this.payments});
 }
 
 /// صفحه نمایش لیست دریافتی‌ها و خلاصه‌ی آن‌ها.
@@ -56,9 +50,9 @@ class _PaymentsPageState extends State<PaymentsPage> {
 
   /// تنظیم فیلتر ماه به صورت پیش‌فرض روی ماه جاری.
   void _setDefaultMonthFilter() {
-    final now = sh.Jalali.now();
+    final now = p.Jalali.now();
     setState(() {
-      selectedMonths = [sh.Jalali(now.year, now.month, 1)];
+      selectedMonths = [p.Jalali(now.year, now.month, 1)];
     });
   }
 
@@ -66,7 +60,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
   int? selectedEmployerId;
 
   /// لیستی از ماه‌های انتخاب شده برای فیلتر.
-  List<sh.Jalali> selectedMonths = [];
+  List<p.Jalali> selectedMonths = [];
 
   /// بررسی می‌کند که آیا تاریخ جلالی ورودی در بین ماه‌های انتخاب شده قرار دارد یا خیر.
   /// [jalaliDate] تاریخ جلالی به فرمت رشته.
@@ -83,10 +77,10 @@ class _PaymentsPageState extends State<PaymentsPage> {
   /// [employersController] کنترلر کارفرماها برای دریافت نام کارفرما.
   /// برمی‌گرداند لیستی از PaymentSummary برای هر کارفرما.
   List<PaymentSummary> _getEmployerPaymentSummaries(
-      List<MapEntry<dynamic, Payment>> payments,
-      EmployersController employersController,
-      ) {
-    final Map<int?, List<MapEntry<dynamic, Payment>>> groupedPayments = {};
+    List<MapEntry<dynamic, PaymentModel>> payments,
+    EmployersController employersController,
+  ) {
+    final Map<int?, List<MapEntry<dynamic, PaymentModel>>> groupedPayments = {};
     for (var entry in payments) {
       final employerId = entry.value.employerId;
       if (!groupedPayments.containsKey(employerId)) {
@@ -98,9 +92,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
     final List<PaymentSummary> employerSummaries = groupedPayments.entries.map((e) {
       String title = 'نامشخص';
       if (e.key != null) {
-        final employerEntry = employersController.employers.firstWhereOrNull(
-              (emp) => emp.key == e.key,
-        );
+        final employerEntry = employersController.employers.firstWhereOrNull((emp) => emp.key == e.key);
         if (employerEntry != null) {
           title = employerEntry.value.name;
         }
@@ -122,14 +114,10 @@ class _PaymentsPageState extends State<PaymentsPage> {
     final EmployersController employersController = Get.find<EmployersController>();
 
     return Scaffold(
-      backgroundColor: Theme.of(context).secondaryHeaderColor.withAlpha(370),
+      // backgroundColor: Theme.of(context).secondaryHeaderColor.withAlpha(370),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () => _showAddPaymentDialog(
-          context,
-          paymentsController,
-          employersController,
-        ),
+        onPressed: () => _showAddPaymentDialog(context, paymentsController, employersController),
       ),
       body: SafeArea(
         child: Column(
@@ -161,21 +149,20 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 // ساخت خلاصه‌ی کلی به صورت دستی از لیست فیلتر شده با تاریخ
                 final totalSummary = PaymentSummary(
                   title: 'کل دریافتی‌ها',
-                  total: dateFilteredPayments.fold(
-                      0, (sum, entry) => sum + entry.value.amount),
+                  total: dateFilteredPayments.fold(0, (sum, entry) => sum + entry.value.amount),
                   payments: dateFilteredPayments,
                 );
 
                 // مرحله ۲: اعمال فیلتر کارفرما بر روی لیست بالا برای کارت‌های کارفرمایان
                 final fullyFilteredPayments = dateFilteredPayments
-                    .where((e) =>
-                selectedEmployerId == null ||
-                    e.value.employerId == selectedEmployerId)
+                    .where((e) => selectedEmployerId == null || e.value.employerId == selectedEmployerId)
                     .toList();
 
                 // ساخت خلاصه‌های کارفرمایان از لیست کاملاً فیلتر شده
                 final employerSummaries = _getEmployerPaymentSummaries(
-                    fullyFilteredPayments, employersController);
+                  fullyFilteredPayments,
+                  employersController,
+                );
 
                 // لیست نهایی خلاصه‌ها برای رندر شدن (شامل کارت کلی و کارت‌های کارفرما)
                 final List<PaymentSummary> summariesToRender = [totalSummary];
@@ -198,7 +185,8 @@ class _PaymentsPageState extends State<PaymentsPage> {
                       return _buildSummaryCard(
                         context,
                         summariesToRender[0],
-                        selectedEmployerId == null, // کارت کلی در حالت "همه کارفرماها" باز باشد
+                        false,
+                        // selectedEmployerId == null, // کارت کلی در حالت "همه کارفرماها" باز باشد
                         index, // Index برای رنگ‌بندی
                         employersController,
                         paymentsController,
@@ -213,10 +201,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                             child: Text(
                               'تراکنشی برای این کارفرما در بازه انتخاب شده ثبت نشده است',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[700],
-                              ),
+                              style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                             ),
                           ),
                         ),
@@ -252,13 +237,13 @@ class _PaymentsPageState extends State<PaymentsPage> {
   /// [employersController] کنترلر کارفرماها.
   /// [paymentsController] کنترلر دریافتی‌ها.
   Widget _buildSummaryCard(
-      BuildContext context,
-      PaymentSummary summary,
-      bool initiallyExpanded,
-      int cardIndex, // اضافه شدن cardIndex برای رنگ‌بندی
-      EmployersController employersController, // اضافه شدن کنترلرها
-      PaymentsController paymentsController,
-      ) {
+    BuildContext context,
+    PaymentSummary summary,
+    bool initiallyExpanded,
+    int cardIndex, // اضافه شدن cardIndex برای رنگ‌بندی
+    EmployersController employersController, // اضافه شدن کنترلرها
+    PaymentsController paymentsController,
+  ) {
     // منطق رنگ‌بندی کارت بر اساس ایندکس در لیست رندر شده
     Color? cardColor;
     if (cardIndex == 0) {
@@ -267,135 +252,115 @@ class _PaymentsPageState extends State<PaymentsPage> {
       cardColor = cardIndex.isEven ? Colors.amberAccent[100] : Colors.blue[100];
     }
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      elevation: 4,
-      color: cardColor,
-      child: ExpansionTile(
-        initiallyExpanded: initiallyExpanded,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              summary.title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              '${summary.total.toString().toPriceString()} تومان',
-              style: const TextStyle(
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
+    return TweenAnimationBuilder<double>(
+      // key: ValueKey(employerId),
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 600),
+      builder: (BuildContext context, double value, Widget? child) {
+        return Opacity(
+          opacity: value,
+          // child: Transform.translate(offset: Offset((1 - value) * 40, 0), child: child),
+          child: Transform.translate(offset: Offset(0, (1 - value) * 30), child: child),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        elevation: 4,
+        color: cardColor,
+        child: ExpansionTile(
+          initiallyExpanded: initiallyExpanded,
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(summary.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                '${summary.total.toString().toPriceString()} تومان',
+                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
               ),
-            ),
-          ],
-        ),
-        children: summary.payments.map((entry) {
-          final payment = entry.value;
-          return Card(
-            margin: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 2,
-            ),
-            elevation: 4,
-            child: ListTile(
-              leading: const Icon(Icons.payments, color: Colors.green),
-              title: Text(
-                '${payment.amount.toString().toPriceString()} تومان',
-                style: const TextStyle(color: Colors.green),
-              ),
-              subtitle: Text(
-                (() {
-                  String employerName = 'نامشخص';
-                  if (payment.employerId != null) {
-                    final employer = employersController
-                        .employers
-                        .firstWhereOrNull(
-                          (e) => e.key == payment.employerId,
-                    );
-                    if (employer != null) {
-                      employerName = employer.value.name;
+            ],
+          ),
+          children: summary.payments.map((entry) {
+            final payment = entry.value;
+            return Card(
+              margin: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+              elevation: 4,
+              child: ListTile(
+                leading: const Icon(Icons.payments, color: Colors.green),
+                title: Text(
+                  '${payment.amount.toString().toPriceString()} تومان',
+                  style: const TextStyle(color: Colors.green),
+                ),
+                subtitle: Text(
+                  (() {
+                    String employerName = 'نامشخص';
+                    if (payment.employerId != null) {
+                      final employer = employersController.employers.firstWhereOrNull(
+                        (e) => e.key == payment.employerId,
+                      );
+                      if (employer != null) {
+                        employerName = employer.value.name;
+                      }
                     }
-                  }
-                  final String dateStr = payment.jalaliDate;
-                  return 'کارفرما: $employerName\n$dateStr';
-                })(),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () => _showEditPaymentDialog(
-                      context,
-                      paymentsController,
-                      employersController,
-                      entry.key,
-                      payment,
+                    final String dateStr = payment.jalaliDate;
+                    return 'کارفرما: $employerName\n$dateStr';
+                  })(),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      onPressed: () => _showEditPaymentDialog(
+                        context,
+                        paymentsController,
+                        employersController,
+                        entry.key,
+                        payment,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _showDeleteConfirmDialog(
-                      context,
-                      paymentsController,
-                      entry.key,
-                      payment.amount,
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () =>
+                          _showDeleteConfirmDialog(context, paymentsController, entry.key, payment.amount),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                onTap: () => _showPaymentDetails(context, payment, employersController),
               ),
-              onTap: () => _showPaymentDetails(
-                context,
-                payment,
-                employersController,
-              ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
 
-  /// کپی کردن خروجی CSV دریافتی‌های فیلتر شده به کلیپ‌بورد.
-  /// [paymentsController] کنترلر دریافتی‌ها.
-  /// [employersController] کنترلر کارفرماها.
-  void _copyCsv(
-      PaymentsController paymentsController,
-      EmployersController employersController,
-      ) async {
-    final List<String> rows = <String>[];
-    rows.add('amount,employer,date,note');
-    final List<MapEntry<dynamic, Payment>> filtered = paymentsController.payments
-        .where(
-          (e) =>
-      (selectedEmployerId == null ||
-          e.value.employerId == selectedEmployerId) &&
-          _isInSelectedMonths(e.value.jalaliDate),
-    )
-        .toList();
-    for (final entry in filtered) {
-      final Payment p = entry.value;
-      String employerName = 'نامشخص';
-      if (p.employerId != null) {
-        final emp = employersController.employers.firstWhereOrNull(
-              (e) => e.key == p.employerId,
-        );
-        if (emp != null) employerName = emp.value.name;
-      }
-      final String date = p.jalaliDate;
-      final String note = (p.note ?? '').replaceAll(',', ' ');
-      rows.add('${p.amount},$employerName,$date,$note');
-    }
-    final String csv = rows.join('\n');
-    await Clipboard.setData(ClipboardData(text: csv));
-    if (mounted) {
-      Get.snackbar(
-        'کپی شد',
-        'خروجی CSV در کلیپ‌بورد قرار گرفت',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    }
-  }
+  // void _copyCsv(PaymentsController paymentsController, EmployersController employersController) async {
+  //   final List<String> rows = <String>[];
+  //   rows.add('amount,employer,date,note');
+  //   final List<MapEntry<dynamic, PaymentModel>> filtered = paymentsController.payments
+  //       .where(
+  //         (e) =>
+  //             (selectedEmployerId == null || e.value.employerId == selectedEmployerId) &&
+  //             _isInSelectedMonths(e.value.jalaliDate),
+  //       )
+  //       .toList();
+  //   for (final entry in filtered) {
+  //     final PaymentModel p = entry.value;
+  //     String employerName = 'نامشخص';
+  //     if (p.employerId != null) {
+  //       final emp = employersController.employers.firstWhereOrNull((e) => e.key == p.employerId);
+  //       if (emp != null) employerName = emp.value.name;
+  //     }
+  //     final String date = p.jalaliDate;
+  //     final String note = (p.note ?? '').replaceAll(',', ' ');
+  //     rows.add('${p.amount},$employerName,$date,$note');
+  //   }
+  //   final String csv = rows.join('\n');
+  //   await Clipboard.setData(ClipboardData(text: csv));
+  //   if (mounted) {
+  //     Get.snackbar('کپی شد', 'خروجی CSV در کلیپ‌بورد قرار گرفت', snackPosition: SnackPosition.BOTTOM);
+  //   }
+  // }
 
   /// نمایش دیالوگ ویرایش یک دریافتی.
   /// [context] کانتکست ویجت.
@@ -404,17 +369,17 @@ class _PaymentsPageState extends State<PaymentsPage> {
   /// [paymentKey] کلید (Key) دریافتی در Hive/دیتابیس.
   /// [payment] شیء Payment برای ویرایش.
   void _showEditPaymentDialog(
-      BuildContext context,
-      PaymentsController paymentsController,
-      EmployersController employersController,
-      dynamic paymentKey,
-      Payment payment,
-      ) {
+    BuildContext context,
+    PaymentsController paymentsController,
+    EmployersController employersController,
+    dynamic paymentKey,
+    PaymentModel payment,
+  ) {
     final TextEditingController amountController = TextEditingController(
       text: payment.amount.toString().toPriceString(),
     );
     final TextEditingController noteController = TextEditingController(text: payment.note ?? '');
-    sh.Jalali selectedDate = JalaliUtils.parseJalali(payment.jalaliDate);
+    p.Jalali selectedDate = JalaliUtils.parseJalali(payment.jalaliDate);
     int? selectedEmployerId = payment.employerId;
     String? employerErrorText;
 
@@ -446,15 +411,9 @@ class _PaymentsPageState extends State<PaymentsPage> {
                     errorText: employerErrorText,
                   ),
                   items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('انتخاب کنید...'),
-                    ),
+                    const DropdownMenuItem<int?>(value: null, child: Text('انتخاب کنید...')),
                     ...employersController.employers.map((entry) {
-                      return DropdownMenuItem<int?>(
-                        value: entry.key,
-                        child: Text(entry.value.name),
-                      );
+                      return DropdownMenuItem<int?>(value: entry.key, child: Text(entry.value.name));
                     }),
                   ],
                   onChanged: (int? value) {
@@ -468,28 +427,18 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 ),
                 const SizedBox(height: 16),
                 ListTile(
-                  title: Text(
-                    'تاریخ: ${JalaliUtils.formatFromJalali(selectedDate)}',
-                  ),
+                  title: Text('تاریخ: ${JalaliUtils.formatFromJalali(selectedDate)}'),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
                     final p.Jalali? picked = await p.showPersianDatePicker(
                       context: context,
-                      initialDate: p.Jalali(
-                        selectedDate.year,
-                        selectedDate.month,
-                        selectedDate.day,
-                      ),
+                      initialDate: p.Jalali(selectedDate.year, selectedDate.month, selectedDate.day),
                       firstDate: p.Jalali(1390, 1, 1),
                       lastDate: p.Jalali.now(),
                     );
                     if (picked != null) {
                       setStateDialog(() {
-                        selectedDate = sh.Jalali(
-                          picked.year,
-                          picked.month,
-                          picked.day,
-                        );
+                        selectedDate = p.Jalali(picked.year, picked.month, picked.day);
                       });
                     }
                   },
@@ -497,25 +446,17 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: noteController,
-                  decoration: const InputDecoration(
-                    labelText: 'یادداشت',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'یادداشت', border: OutlineInputBorder()),
                   maxLines: 3,
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('لغو'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('لغو')),
             ElevatedButton(
               onPressed: () {
-                final int? amount = int.tryParse(
-                  amountController.text.replaceAll(',', '').trim(),
-                );
+                final int? amount = int.tryParse(amountController.text.replaceAll(',', '').trim());
 
                 if (selectedEmployerId == null) {
                   setStateDialog(() {
@@ -529,13 +470,11 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 }
 
                 if (amount != null && amount > 0) {
-                  final Payment editedPayment = Payment(
+                  final PaymentModel editedPayment = PaymentModel(
                     jalaliDate: JalaliUtils.formatFromJalali(selectedDate),
                     employerId: selectedEmployerId,
                     amount: amount,
-                    note: noteController.text.trim().isEmpty
-                        ? null
-                        : noteController.text.trim(),
+                    note: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
                   );
                   paymentsController.editPayment(paymentKey, editedPayment);
                   Navigator.pop(context);
@@ -562,15 +501,13 @@ class _PaymentsPageState extends State<PaymentsPage> {
   /// [payment] شیء Payment برای نمایش جزئیات.
   /// [employersController] کنترلر کارفرماها برای دریافت نام کارفرما.
   void _showPaymentDetails(
-      BuildContext context,
-      Payment payment,
-      EmployersController employersController,
-      ) {
+    BuildContext context,
+    PaymentModel payment,
+    EmployersController employersController,
+  ) {
     String employerName = 'نامشخص';
     if (payment.employerId != null) {
-      final employer = employersController.employers.firstWhereOrNull(
-            (e) => e.key == payment.employerId,
-      );
+      final employer = employersController.employers.firstWhereOrNull((e) => e.key == payment.employerId);
       if (employer != null) {
         employerName = employer.value.name;
       }
@@ -589,12 +526,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
             if (payment.note != null) Text('یادداشت: ${payment.note}'),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('بستن'),
-          ),
-        ],
+        actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('بستن'))],
       ),
     );
   }
@@ -604,13 +536,13 @@ class _PaymentsPageState extends State<PaymentsPage> {
   /// [paymentsController] کنترلر دریافتی‌ها.
   /// [employersController] کنترلر کارفرماها.
   void _showAddPaymentDialog(
-      BuildContext context,
-      PaymentsController paymentsController,
-      EmployersController employersController,
-      ) {
+    BuildContext context,
+    PaymentsController paymentsController,
+    EmployersController employersController,
+  ) {
     final TextEditingController amountController = TextEditingController();
     final TextEditingController noteController = TextEditingController();
-    sh.Jalali selectedDate = sh.Jalali.now();
+    p.Jalali selectedDate = p.Jalali.now();
     int? selectedEmployerId;
     String? employerErrorText;
 
@@ -642,15 +574,9 @@ class _PaymentsPageState extends State<PaymentsPage> {
                     errorText: employerErrorText,
                   ),
                   items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('انتخاب کنید...'),
-                    ),
+                    const DropdownMenuItem<int?>(value: null, child: Text('انتخاب کنید...')),
                     ...employersController.employers.map((entry) {
-                      return DropdownMenuItem<int?>(
-                        value: entry.key,
-                        child: Text(entry.value.name),
-                      );
+                      return DropdownMenuItem<int?>(value: entry.key, child: Text(entry.value.name));
                     }),
                   ],
                   onChanged: (int? value) {
@@ -664,28 +590,18 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 ),
                 const SizedBox(height: 16),
                 ListTile(
-                  title: Text(
-                    'تاریخ: ${JalaliUtils.formatFromJalali(selectedDate)}',
-                  ),
+                  title: Text('تاریخ: ${JalaliUtils.formatFromJalali(selectedDate)}'),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
                     final p.Jalali? picked = await p.showPersianDatePicker(
                       context: context,
-                      initialDate: p.Jalali(
-                        selectedDate.year,
-                        selectedDate.month,
-                        selectedDate.day,
-                      ),
+                      initialDate: p.Jalali(selectedDate.year, selectedDate.month, selectedDate.day),
                       firstDate: p.Jalali(1390, 1, 1),
                       lastDate: p.Jalali.now(),
                     );
                     if (picked != null) {
                       setStateDialog(() {
-                        selectedDate = sh.Jalali(
-                          picked.year,
-                          picked.month,
-                          picked.day,
-                        );
+                        selectedDate = p.Jalali(picked.year, picked.month, picked.day);
                       });
                     }
                   },
@@ -693,25 +609,17 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: noteController,
-                  decoration: const InputDecoration(
-                    labelText: 'یادداشت',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'یادداشت', border: OutlineInputBorder()),
                   maxLines: 3,
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('لغو'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('لغو')),
             ElevatedButton(
               onPressed: () {
-                final int? amount = int.tryParse(
-                  amountController.text.replaceAll(',', '').trim(),
-                );
+                final int? amount = int.tryParse(amountController.text.replaceAll(',', '').trim());
 
                 if (selectedEmployerId == null) {
                   setStateDialog(() {
@@ -725,13 +633,11 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 }
 
                 if (amount != null && amount > 0) {
-                  final Payment newPayment = Payment(
+                  final PaymentModel newPayment = PaymentModel(
                     jalaliDate: JalaliUtils.formatFromJalali(selectedDate),
                     employerId: selectedEmployerId,
                     amount: amount,
-                    note: noteController.text.trim().isEmpty
-                        ? null
-                        : noteController.text.trim(),
+                    note: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
                   );
                   paymentsController.addPayment(newPayment);
                   Navigator.pop(context);
@@ -759,23 +665,18 @@ class _PaymentsPageState extends State<PaymentsPage> {
   /// [key] کلید (Key) دریافتی در Hive/دیتابیس.
   /// [amount] مبلغ دریافتی که قرار است حذف شود (برای نمایش در پیام تأیید).
   void _showDeleteConfirmDialog(
-      BuildContext context,
-      PaymentsController controller,
-      dynamic key,
-      int amount,
-      ) {
+    BuildContext context,
+    PaymentsController controller,
+    dynamic key,
+    int amount,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
         title: const Text('تأیید حذف'),
-        content: Text(
-          'آیا مطمئن هستید که می‌خواهید دریافتی ${amount.toString()} تومان را حذف کنید؟',
-        ),
+        content: Text('آیا مطمئن هستید که می‌خواهید دریافتی ${amount.toString()} تومان را حذف کنید؟'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('لغو'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('لغو')),
           ElevatedButton(
             onPressed: () {
               controller.deletePayment(key);

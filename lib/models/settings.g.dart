@@ -1,38 +1,41 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'wage_settings.dart';
+part of 'settings.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class WageSettingsAdapter extends TypeAdapter<WageSettings> {
+class SettingsModelAdapter extends TypeAdapter<SettingsModel> {
   @override
   final int typeId = 4;
 
   @override
-  WageSettings read(BinaryReader reader) {
+  SettingsModel read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return WageSettings(
+    return SettingsModel(
       isDaily: fields[0] as bool,
       dailyWage: fields[1] as int,
       hourlyWage: fields[2] as int,
+      isDarkMode: fields[3] as bool,
     );
   }
 
   @override
-  void write(BinaryWriter writer, WageSettings obj) {
+  void write(BinaryWriter writer, SettingsModel obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.isDaily)
       ..writeByte(1)
       ..write(obj.dailyWage)
       ..writeByte(2)
-      ..write(obj.hourlyWage);
+      ..write(obj.hourlyWage)
+      ..writeByte(3)
+      ..write(obj.isDarkMode);
   }
 
   @override
@@ -41,7 +44,7 @@ class WageSettingsAdapter extends TypeAdapter<WageSettings> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is WageSettingsAdapter &&
+      other is SettingsModelAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

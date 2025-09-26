@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shamsi_date/shamsi_date.dart' as sh;
+import 'package:persian_datetime_picker/persian_datetime_picker.dart' as sh;
 
 import '../controllers/workdays_controller.dart';
 import '../controllers/payments_controller.dart';
@@ -12,23 +12,17 @@ class ChartsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final WorkDaysController workDaysController =
-        Get.find<WorkDaysController>();
-    final PaymentsController paymentsController =
-        Get.find<PaymentsController>();
+    final WorkDaysController workDaysController = Get.find<WorkDaysController>();
+    final PaymentsController paymentsController = Get.find<PaymentsController>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('نمودارها'), centerTitle: true),
       body: Obx(() {
         final workdays = workDaysController.workdays.values.toList();
-        final payments = paymentsController.payments
-            .map((e) => e.value)
-            .toList();
+        final payments = paymentsController.payments.map((e) => e.value).toList();
 
         final nowJ = sh.Jalali.now();
-        final Map<int, int> earnedByMonth = {
-          for (int m = 1; m <= 12; m++) m: 0,
-        };
+        final Map<int, int> earnedByMonth = {for (int m = 1; m <= 12; m++) m: 0};
         final Map<int, int> paidByMonth = {for (int m = 1; m <= 12; m++) m: 0};
 
         for (final d in workdays) {
@@ -53,16 +47,8 @@ class ChartsPage extends StatelessWidget {
               BarChartGroupData(
                 x: m, // <- این باید با ماه واقعی داده‌ها مطابقت داشته باشد
                 barRods: [
-                  BarChartRodData(
-                    toY: earned.toDouble(),
-                    color: Colors.green,
-                    width: 6,
-                  ),
-                  BarChartRodData(
-                    toY: paid.toDouble(),
-                    color: Colors.blue,
-                    width: 6,
-                  ),
+                  BarChartRodData(toY: earned.toDouble(), color: Colors.green, width: 6),
+                  BarChartRodData(toY: paid.toDouble(), color: Colors.blue, width: 6),
                 ],
               ),
             );
@@ -88,10 +74,7 @@ class ChartsPage extends StatelessWidget {
                     child: BarChart(
                       BarChartData(
                         barGroups: barGroups,
-                        gridData: FlGridData(
-                          show: true,
-                          drawVerticalLine: false,
-                        ),
+                        gridData: const FlGridData(show: true, drawVerticalLine: false),
                         titlesData: FlTitlesData(
                           leftTitles: AxisTitles(
                             sideTitles: SideTitles(
@@ -99,27 +82,18 @@ class ChartsPage extends StatelessWidget {
                               reservedSize: 60,
                               getTitlesWidget: (value, meta) {
                                 num result = value / 1000000;
-                                final val = result % 2 == 0
-                                    ? result.toInt()
-                                    : result;
+                                final val = result % 2 == 0 ? result.toInt() : result;
                                 return SideTitleWidget(
                                   axisSide: meta.axisSide,
                                   space: 12,
                                   angle: -0.5,
-                                  child: Text(
-                                    '$val میلیون',
-                                    style: const TextStyle(fontSize: 10),
-                                  ),
+                                  child: Text('$val میلیون', style: const TextStyle(fontSize: 10)),
                                 );
                               },
                             ),
                           ),
-                          rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
@@ -172,10 +146,7 @@ class ChartsPage extends StatelessWidget {
                                   axisSide: meta.axisSide,
                                   space: 4,
                                   angle: -0.9, // زاویه به رادیان، حدود -30 درجه
-                                  child: Text(
-                                    text,
-                                    style: const TextStyle(fontSize: 10),
-                                  ),
+                                  child: Text(text, style: const TextStyle(fontSize: 10)),
                                 );
                               },
                             ),

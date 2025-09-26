@@ -6,17 +6,17 @@ part of 'employer.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
-class EmployerAdapter extends TypeAdapter<Employer> {
+class EmployerModelAdapter extends TypeAdapter<EmployerModel> {
   @override
   final int typeId = 1;
 
   @override
-  Employer read(BinaryReader reader) {
+  EmployerModel read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Employer(
+    return EmployerModel(
       name: fields[0] as String,
       phone: fields[1] as String?,
       note: fields[2] as String?,
@@ -24,7 +24,7 @@ class EmployerAdapter extends TypeAdapter<Employer> {
   }
 
   @override
-  void write(BinaryWriter writer, Employer obj) {
+  void write(BinaryWriter writer, EmployerModel obj) {
     writer
       ..writeByte(3)
       ..writeByte(0)
@@ -41,7 +41,7 @@ class EmployerAdapter extends TypeAdapter<Employer> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is EmployerAdapter &&
+      other is EmployerModelAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

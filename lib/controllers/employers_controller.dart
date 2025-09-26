@@ -4,15 +4,15 @@ import 'package:hive/hive.dart';
 import '../models/employer.dart';
 
 class EmployersController extends GetxController {
-  late final Box<Employer> _employerBox;
+  late final Box<EmployerModel> _employerBox;
 
-  final RxList<MapEntry<dynamic, Employer>> employers =
-      <MapEntry<dynamic, Employer>>[].obs;
+  final RxList<MapEntry<dynamic, EmployerModel>> employers =
+      <MapEntry<dynamic, EmployerModel>>[].obs;
 
   @override
   void onInit() {
     super.onInit();
-    _employerBox = Hive.box<Employer>('employers');
+    _employerBox = Hive.box<EmployerModel>('employers');
     _refresh();
     _employerBox.watch().listen((_) => _refresh());
   }
@@ -26,7 +26,7 @@ class EmployersController extends GetxController {
     String? phone,
     String? note,
   }) async {
-    final employer = Employer(name: name, phone: phone, note: note);
+    final employer = EmployerModel(name: name, phone: phone, note: note);
     final key = await _employerBox.add(employer);
     _refresh();
     return key;
@@ -34,7 +34,7 @@ class EmployersController extends GetxController {
 
   Future<void> updateEmployer({
     required int key,
-    required Employer updated,
+    required EmployerModel updated,
   }) async {
     await _employerBox.put(key, updated);
     _refresh();

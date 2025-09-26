@@ -12,14 +12,10 @@ class EmployersPage extends StatelessWidget {
     final EmployersController controller = Get.find<EmployersController>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('کارفرماها'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showAddEmployerDialog(context, controller),
-          ),
-        ],
+      appBar: AppBar(title: const Text('کارفرماها'), centerTitle: true),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () => _showAddEmployerDialog(context, controller),
       ),
       body: Obx(() {
         if (controller.employers.isEmpty) {
@@ -39,10 +35,7 @@ class EmployersPage extends StatelessWidget {
               builder: (context, value, child) {
                 return Opacity(
                   opacity: value,
-                  child: Transform.translate(
-                    offset: Offset(0, (1 - value) * 30),
-                    child: child,
-                  ),
+                  child: Transform.translate(offset: Offset(0, (1 - value) * 30), child: child),
                 );
               },
               child: InkWell(
@@ -58,80 +51,46 @@ class EmployersPage extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (employer.phone != null)
-                            Text('تلفن: ${employer.phone}'),
-                          if (employer.note != null)
-                            Text('یادداشت: ${employer.note}'),
+                          if (employer.phone != null) Text('تلفن: ${employer.phone}'),
+                          if (employer.note != null) Text('یادداشت: ${employer.note}'),
                         ],
                       ),
                       actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          child: const Text('بستن'),
-                        ),
+                        TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('بستن')),
                       ],
                     ),
                   );
                 },
                 child: Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: ListTile(
-                    leading: const Icon(
-                      Icons.business_center_outlined,
-                      color: Colors.blue,
-                      size: 28,
-                    ),
+                    leading: const Icon(Icons.person, color: Colors.blue, size: 30),
                     title: Text(
                       employer.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (employer.phone != null)
-                          Text('تلفن: ${employer.phone}'),
-                        if (employer.note != null)
-                          Text('یادداشت: ${employer.note}'),
+                        if (employer.phone != null) Text('تلفن: ${employer.phone}'),
+                        if (employer.note != null) Text('یادداشت: ${employer.note}'),
                       ],
                     ),
-                    trailing: PopupMenuButton(
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Text('ویرایش'),
+
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () => _showEditEmployerDialog(context, controller, key, employer),
                         ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Text('حذف'),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _showDeleteConfirmDialog(context, controller, key, employer.name),
                         ),
                       ],
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          _showEditEmployerDialog(
-                            context,
-                            controller,
-                            key,
-                            employer,
-                          );
-                        } else if (value == 'delete') {
-                          _showDeleteConfirmDialog(
-                            context,
-                            controller,
-                            key,
-                            employer.name,
-                          );
-                        }
-                      },
                     ),
                   ),
                 ),
@@ -143,10 +102,7 @@ class EmployersPage extends StatelessWidget {
     );
   }
 
-  void _showAddEmployerDialog(
-    BuildContext context,
-    EmployersController controller,
-  ) {
+  void _showAddEmployerDialog(BuildContext context, EmployersController controller) {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final noteController = TextEditingController();
@@ -160,46 +116,30 @@ class EmployersPage extends StatelessWidget {
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'نام کارفرما *',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'نام کارفرما *', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: phoneController,
-              decoration: const InputDecoration(
-                labelText: 'شماره تلفن',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'شماره تلفن', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: noteController,
-              decoration: const InputDecoration(
-                labelText: 'یادداشت',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'یادداشت', border: OutlineInputBorder()),
               maxLines: 3,
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('لغو'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('لغو')),
           ElevatedButton(
             onPressed: () {
               if (nameController.text.trim().isNotEmpty) {
                 controller.addEmployer(
                   name: nameController.text.trim(),
-                  phone: phoneController.text.trim().isEmpty
-                      ? null
-                      : phoneController.text.trim(),
-                  note: noteController.text.trim().isEmpty
-                      ? null
-                      : noteController.text.trim(),
+                  phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
+                  note: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
                 );
                 Navigator.pop(context);
               }
@@ -215,7 +155,7 @@ class EmployersPage extends StatelessWidget {
     BuildContext context,
     EmployersController controller,
     dynamic key,
-    Employer employer,
+    EmployerModel employer,
   ) {
     final nameController = TextEditingController(text: employer.name);
     final phoneController = TextEditingController(text: employer.phone ?? '');
@@ -230,46 +170,30 @@ class EmployersPage extends StatelessWidget {
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'نام کارفرما *',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'نام کارفرما *', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: phoneController,
-              decoration: const InputDecoration(
-                labelText: 'شماره تلفن',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'شماره تلفن', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: noteController,
-              decoration: const InputDecoration(
-                labelText: 'یادداشت',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'یادداشت', border: OutlineInputBorder()),
               maxLines: 3,
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('لغو'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('لغو')),
           ElevatedButton(
             onPressed: () {
               if (nameController.text.trim().isNotEmpty) {
-                final updatedEmployer = Employer(
+                final updatedEmployer = EmployerModel(
                   name: nameController.text.trim(),
-                  phone: phoneController.text.trim().isEmpty
-                      ? null
-                      : phoneController.text.trim(),
-                  note: noteController.text.trim().isEmpty
-                      ? null
-                      : noteController.text.trim(),
+                  phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
+                  note: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
                 );
                 controller.updateEmployer(key: key, updated: updatedEmployer);
                 Navigator.pop(context);
@@ -294,10 +218,7 @@ class EmployersPage extends StatelessWidget {
         title: const Text('تأیید حذف'),
         content: Text('آیا مطمئن هستید که می‌خواهید "$name" را حذف کنید؟'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('لغو'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('لغو')),
           ElevatedButton(
             onPressed: () {
               controller.deleteEmployer(key);

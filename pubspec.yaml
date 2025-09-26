@@ -20,9 +20,13 @@ dependencies:
   hive_flutter: ^1.1.0
   intl:
   # table_calendar: ^3.0.9
-  shamsi_date: ^1.0.4
+#  shamsi_date: ^1.0.4
   fl_chart:
   persian_datetime_picker: ^3.1.0
+  pdf: ^3.11.3
+  printing: ^5.14.2
+  path_provider: ^2.1.5
+  share_plus: ^12.0.0
 
 dev_dependencies:
   flutter_test:
@@ -35,17 +39,21 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # assets:
+  assets:
   #   - images/a_dot_ham.jpeg
 
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
+    - assets/fonts/ # اگر پوشه assets دارید، فونت را در اینجا قرار دهید
+  fonts:
+    - family: sans
+      fonts:
+        - asset: assets/fonts/sans.ttf
+    - family: vazir
+      fonts:
+        - asset: assets/fonts/vazir.ttf
+    - family: yekan
+      fonts:
+        - asset: assets/fonts/yekan.ttf
+    - family: koodak
+      fonts:
+        - asset: assets/fonts/koodak.ttf
+

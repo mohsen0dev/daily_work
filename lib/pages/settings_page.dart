@@ -2,8 +2,8 @@ import 'package:daily_work/utils/price_format.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../controllers/wage_controller.dart';
-import '../models/wage_settings.dart';
+import '../controllers/setting_controller.dart';
+import '../models/settings.dart';
 import '../utils/formater.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -14,7 +14,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final WageController wageController = Get.find<WageController>();
+  final SettingController wageController = Get.find<SettingController>();
 
   late bool isDaily;
   final TextEditingController dailyCtrl = TextEditingController();
@@ -47,37 +47,24 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: const [
+                    const Row(
+                      children: [
                         Icon(Icons.settings, color: Colors.blue),
                         SizedBox(width: 8),
-                        Text(
-                          'حالت محاسبه',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                        Text('حالت محاسبه', style: TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                     const SizedBox(height: 12),
                     SegmentedButton<bool>(
                       segments: const [
-                        ButtonSegment(
-                          value: true,
-                          label: Text('روزانه'),
-                          icon: Icon(Icons.calendar_today),
-                        ),
-                        ButtonSegment(
-                          value: false,
-                          label: Text('ساعتی'),
-                          icon: Icon(Icons.access_time),
-                        ),
+                        ButtonSegment(value: true, label: Text('روزانه'), icon: Icon(Icons.calendar_today)),
+                        ButtonSegment(value: false, label: Text('ساعتی'), icon: Icon(Icons.access_time)),
                       ],
                       selected: {isDaily},
                       onSelectionChanged: (set) {
@@ -91,22 +78,17 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(height: 16),
             Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: const [
+                    const Row(
+                      children: [
                         Icon(Icons.attach_money, color: Colors.green),
                         SizedBox(width: 8),
-                        Text(
-                          'مقادیر دستمزد',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                        Text('مقادیر دستمزد', style: TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -123,31 +105,34 @@ class _SettingsPageState extends State<SettingsPage> {
                       keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 12),
-                    TextField(
-                      readOnly: true,
-
-                      // controller: hourlyCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'دستمزد ساعتی (تومان)',
-                        border: OutlineInputBorder(),
-                      ),
-                      inputFormatters: [
-                        // Use the custom formatter here
-                        ThousandSeparatorInputFormatter(),
-                      ],
-                      keyboardType: TextInputType.number,
-                    ),
+                    // TextField(
+                    //   readOnly: true,
+                    //
+                    //   // controller: hourlyCtrl,
+                    //   decoration: const InputDecoration(
+                    //     labelText: 'دستمزد ساعتی (تومان)',
+                    //     border: OutlineInputBorder(),
+                    //   ),
+                    //   inputFormatters: [
+                    //     // Use the custom formatter here
+                    //     ThousandSeparatorInputFormatter(),
+                    //   ],
+                    //   keyboardType: TextInputType.number,
+                    // ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.save),
-                label: const Text('ذخیره تنظیمات'),
-                onPressed: _save,
+            Center(
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width,
+                height: 40,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.save),
+                  label: const Text('ذخیره تنظیمات'),
+                  onPressed: _save,
+                ),
               ),
             ),
           ],
@@ -157,15 +142,9 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _save() async {
-    final int daily =
-        int.tryParse(dailyCtrl.text.trim().replaceAll(',', '')) ?? 0;
-    final int hourly =
-        int.tryParse(hourlyCtrl.text.trim().replaceAll(',', '')) ?? 0;
-    final newSettings = WageSettings(
-      isDaily: isDaily,
-      dailyWage: daily,
-      hourlyWage: hourly,
-    );
+    final int daily = int.tryParse(dailyCtrl.text.trim().replaceAll(',', '')) ?? 0;
+    final int hourly = int.tryParse(hourlyCtrl.text.trim().replaceAll(',', '')) ?? 0;
+    final newSettings = SettingsModel(isDaily: isDaily, dailyWage: daily, hourlyWage: hourly);
     await wageController.saveSettings(newSettings);
     if (mounted) {
       Get.back(result: 1);
