@@ -1,22 +1,22 @@
 import 'package:daily_work/models/work_day.dart';
-import 'package:daily_work/controllers/wage_controller.dart';
+import 'package:daily_work/controllers/setting_controller.dart';
 import 'package:daily_work/utils/jalali_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:shamsi_date/shamsi_date.dart' as sh;
+import 'package:persian_datetime_picker/persian_datetime_picker.dart' as sh;
 
 class WorkDaysController extends GetxController {
   // Directly get the already opened box
-  Box<WorkDay>? _workdayBox;
+  Box<WorkDayModel>? _workdayBox;
 
-  final RxMap<String, WorkDay> workdays = <String, WorkDay>{}.obs;
+  final RxMap<String, WorkDayModel> workdays = <String, WorkDayModel>{}.obs;
 
   Future<void> init() async {
     if (!Hive.isBoxOpen('workdays')) {
-      _workdayBox = await Hive.openBox<WorkDay>('workdays');
+      _workdayBox = await Hive.openBox<WorkDayModel>('workdays');
     } else {
-      _workdayBox = Hive.box<WorkDay>('workdays');
+      _workdayBox = Hive.box<WorkDayModel>('workdays');
     }
     _refresh();
     _workdayBox?.listenable().addListener(_refresh);
@@ -25,7 +25,7 @@ class WorkDaysController extends GetxController {
   void _refresh() {
     if (_workdayBox == null) return;
     try {
-      final Map<String, WorkDay> data = _workdayBox!.toMap().map(
+      final Map<String, WorkDayModel> data = _workdayBox!.toMap().map(
         (key, value) => MapEntry(key.toString(), value),
       );
       workdays.value = data;
@@ -34,17 +34,15 @@ class WorkDaysController extends GetxController {
     }
   }
 
-  Future<void> upsertDay(WorkDay day) async {
+  Future<void> upsertDay(WorkDayModel day) async {
     final key = _keyFromJalaliDate(day.jalaliDate);
     // Auto-calc wage if not provided and worked is true
     if (day.worked && day.wage == null) {
       try {
-        final WageController wageController = Get.find<WageController>();
+        final SettingController wageController = Get.find<SettingController>();
         final s = wageController.settings.value;
-        final computed = s.isDaily
-            ? s.dailyWage
-            : (day.hours * s.hourlyWage).round();
-        day = WorkDay(
+        final computed = s.isDaily ? s.dailyWage : (day.hours * s.hourlyWage).round();
+        day = WorkDayModel(
           jalaliDate: day.jalaliDate,
           employerId: day.employerId,
           worked: day.worked,
@@ -59,11 +57,11 @@ class WorkDaysController extends GetxController {
     await _workdayBox!.put(key, day);
   }
 
-  WorkDay? getByJalaliDate(String jalaliDate) {
+  WorkDayModel? getByJalaliDate(String jalaliDate) {
     return workdays[_keyFromJalaliDate(jalaliDate)];
   }
 
-  WorkDay? getByJalali(sh.Jalali jalali) {
+  WorkDayModel? getByJalali(sh.Jalali jalali) {
     final jalaliDate = JalaliUtils.formatFromJalali(jalali);
     return getByJalaliDate(jalaliDate);
   }

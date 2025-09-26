@@ -1,7 +1,8 @@
+import 'package:daily_work/controllers/setting_controller.dart';
 import 'package:daily_work/utils/price_format.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shamsi_date/shamsi_date.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 
 import '../controllers/payments_controller.dart';
 import '../controllers/workdays_controller.dart';
@@ -24,6 +25,8 @@ class _CalendarPageState extends State<CalendarPage> {
   /// (Use the existing singleton instance registered in main.dart)
   final WorkDaysController workDaysController = Get.find<WorkDaysController>();
   final PaymentsController paymentsController = Get.find<PaymentsController>();
+  final SettingController settingCtrl = Get.find<SettingController>();
+
   /// تاریخ جلالی فوکوس شده فعلی در تقویم.
   Jalali _focusedJalali = Jalali.now();
 
@@ -71,35 +74,30 @@ class _CalendarPageState extends State<CalendarPage> {
               workDaysController.update();
             },
           ),
+          IconButton(icon: const Icon(Icons.settings), onPressed: () => Get.toNamed('/settings')),
         ],
       ),
       // Use Obx to rebuild the widget when any Rx variable changes.
       body: SingleChildScrollView(
         child: Obx(() {
           final monthLength = _focusedJalali.monthLength;
-          final firstWeekDay = Jalali(
-            _focusedJalali.year,
-            _focusedJalali.month,
-            1,
-          ).weekDay;
+          final firstWeekDay = Jalali(_focusedJalali.year, _focusedJalali.month, 1).weekDay;
           final today = Jalali.now();
           final List<Widget> dayWidgets = []; // استفاده از const در صورت امکان برای محتویات
-        
+
           // اضافه کردن فضاهای خالی برای روزهای اول هفته که در ماه قبل هستند
           for (int i = 1; i < firstWeekDay; i++) {
             dayWidgets.add(const SizedBox());
           }
-        
+
           // اضافه کردن ویجت برای هر روز ماه
           for (int day = 1; day <= monthLength; day++) {
             final jd = Jalali(_focusedJalali.year, _focusedJalali.month, day);
             final wd = workDaysController.getByJalali(jd);
             final bool worked = wd?.worked == true;
-            final bool isToday = (jd.year == today.year &&
-                jd.month == today.month &&
-                jd.day == today.day);
+            final bool isToday = (jd.year == today.year && jd.month == today.month && jd.day == today.day);
             final bool isSelected = day == _selectedDay.value;
-        
+
             dayWidgets.add(
               GestureDetector(
                 onTap: () async {
@@ -109,20 +107,14 @@ class _CalendarPageState extends State<CalendarPage> {
                   // After returning from DayFormPage, force a data refresh.
                   workDaysController.update();
                 },
-                child: _DayCell(
-                  jd: jd,
-                  worked: worked,
-                  isToday: isToday,
-                  isSelected: isSelected,
-                ),
+                child: _DayCell(jd: jd, worked: worked, isToday: isToday, isSelected: isSelected),
               ),
             );
           }
           // فیلتر کردن روزهای کاری ماه جاری
           final currentMonthWorkdays = workDaysController.workdays.values.where((wd) {
             final workdayJalali = JalaliUtils.parseJalali(wd.jalaliDate);
-            return workdayJalali.year == _focusedJalali.year &&
-                workdayJalali.month == _focusedJalali.month;
+            return workdayJalali.year == _focusedJalali.year && workdayJalali.month == _focusedJalali.month;
           }).toList();
 
           // محاسبه تعداد روزهای کارکرد (بر اساس مجموع ساعات تقسیم بر 8)
@@ -134,30 +126,30 @@ class _CalendarPageState extends State<CalendarPage> {
               : workedDaysCount.toStringAsFixed(1);
 
           // محاسبه مجموع دستمزد ماه جاری
-          final int totalWageForMonth = currentMonthWorkdays
-              .fold<int>(0, (sum, wd) => sum + (wd.wage ?? 0));
+          final int totalWageForMonth = currentMonthWorkdays.fold<int>(0, (sum, wd) => sum + (wd.wage ?? 0));
           final String formattedWage = totalWageForMonth.toPriceString();
 
           final currentMonthPayments = paymentsController.payments.where((p) {
-
             final paymentJalali = JalaliUtils.parseJalali(p.value.jalaliDate); // p.value
-            return paymentJalali.year == _focusedJalali.year &&
-                paymentJalali.month == _focusedJalali.month;
+            return paymentJalali.year == _focusedJalali.year && paymentJalali.month == _focusedJalali.month;
           }).toList();
 
           // محاسبه مجموع دریافتی ماه جاری
-          final int totalPaymentsForMonth = currentMonthPayments
-              .fold<int>(0, (sum, p) => sum + p.value.amount);
+          final int totalPaymentsForMonth = currentMonthPayments.fold<int>(
+            0,
+            (sum, p) => sum + p.value.amount,
+          );
           final String formattedPayments = totalPaymentsForMonth.toPriceString();
           // ---------- پایان منطق محاسبات برای خلاصه ماه ----------
-        
+
           return Center(
             child: Container(
               constraints: const BoxConstraints(maxWidth: 520),
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
-                  const Row( // استفاده از const
+                  const Row(
+                    // استفاده از const
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       Text('ش'),
@@ -166,49 +158,34 @@ class _CalendarPageState extends State<CalendarPage> {
                       Text('س'),
                       Text('چ'),
                       Text('پ'),
-                      Text('ج',style: TextStyle(color: Colors.red),),
+                      Text('ج', style: TextStyle(color: Colors.red)),
                     ],
                   ),
                   const SizedBox(height: 8), // استفاده از const
                   GridView.count(
-                    physics: NeverScrollableScrollPhysics(),
+                    physics: const NeverScrollableScrollPhysics(),
                     crossAxisCount: 7,
                     shrinkWrap: true,
                     children: dayWidgets,
                   ),
                   const SizedBox(height: 18),
                   Container(
-// width: MediaQuery.of(context).size.width-32,
-                    padding: EdgeInsetsDirectional.symmetric(vertical: 10,horizontal: 40),
+                    // width: MediaQuery.of(context).size.width-32,
+                    padding: const EdgeInsetsDirectional.symmetric(vertical: 10, horizontal: 40),
                     decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Theme.of(context).dividerColor.withAlpha(100)
-                      ),
-                      borderRadius: BorderRadius.circular(12)
+                      border: Border.all(color: Theme.of(context).dividerColor.withAlpha(100)),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        NoteWorks(
-                          title: 'تعداد روزهای کارکرد',
-                          value: formattedWorkedDays,
-                          numberic: false,
-                        ),
+                        NoteWorks(title: 'تعداد روزهای کارکرد', value: formattedWorkedDays, numberic: false),
 
-                        NoteWorks(
-                          title: 'مجموع دستمزد ماه جاری',
-                          value: formattedWage,
-                          numberic: true,
-                        ),
-                        NoteWorks(
-                          title: 'مجموع دریافتی ماه جاری',
-                          value: formattedPayments,
-                          numberic: true,
-                        ),
-
+                        NoteWorks(title: 'مجموع دستمزد ماه جاری', value: formattedWage, numberic: true),
+                        NoteWorks(title: 'مجموع دریافتی ماه جاری', value: formattedPayments, numberic: true),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -219,15 +196,9 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 }
 
-
 /// ویجت نمایش دهنده خلاصه‌ای از آمار ماهانه (مثلاً تعداد روزهای کاری، دستمزد
 class NoteWorks extends StatelessWidget {
-  const NoteWorks({
-    super.key,
-    required this.title,
-    required this.value,
-    this.numberic = false,
-  });
+  const NoteWorks({super.key, required this.title, required this.value, this.numberic = false});
 
   final String title;
   final String value;
@@ -235,7 +206,7 @@ class NoteWorks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String endText= numberic?'تومان':'روز';
+    String endText = numberic ? 'تومان' : 'روز';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Text('$title: $value $endText'),
@@ -258,12 +229,7 @@ class _DayCell extends StatelessWidget {
   final bool isSelected;
 
   /// سازنده _DayCell.
-  const _DayCell({
-    required this.jd,
-    required this.worked,
-    required this.isToday,
-    this.isSelected = false,
-  });
+  const _DayCell({required this.jd, required this.worked, required this.isToday, this.isSelected = false});
 
   @override
   Widget build(BuildContext context) {

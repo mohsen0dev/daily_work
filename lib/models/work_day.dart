@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 part 'work_day.g.dart';
 
 @HiveType(typeId: 2)
-class WorkDay extends HiveObject {
+class WorkDayModel extends HiveObject {
   @HiveField(5)
   int? wage; // مبلغ دستمزد
 
@@ -23,7 +23,7 @@ class WorkDay extends HiveObject {
   @HiveField(4)
   String? description;
 
-  WorkDay({
+  WorkDayModel({
     required this.jalaliDate,
     this.employerId,
     this.worked = false,

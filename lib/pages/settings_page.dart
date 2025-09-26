@@ -1,153 +1,105 @@
-import 'package:daily_work/utils/price_format.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../controllers/wage_controller.dart';
-import '../models/wage_settings.dart';
-import '../utils/formater.dart';
+import '../controllers/page_controller/settings_page_controller.dart'; // **کنترلر جدید صفحه تنظیمات**
+import '../utils/formater.dart'; // برای ThousandSeparatorInputFormatter
 
-class SettingsPage extends StatefulWidget {
+/// صفحه تنظیمات
+/// این صفحه به کاربر امکان می‌دهد تنظیمات مختلف برنامه مانند تم،
+/// مقادیر دستمزد و کارفرمای پیش‌فرض را مدیریت کند.
+class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
-}
-
-class _SettingsPageState extends State<SettingsPage> {
-  final WageController wageController = Get.find<WageController>();
-
-  late bool isDaily;
-  final TextEditingController dailyCtrl = TextEditingController();
-  final TextEditingController hourlyCtrl = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    final s = wageController.settings.value;
-    isDaily = s.isDaily;
-    dailyCtrl.text = s.dailyWage.toPriceString();
-    hourlyCtrl.text = s.hourlyWage.toPriceString();
-  }
-
-  @override
-  void dispose() {
-    dailyCtrl.dispose();
-    hourlyCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final SettingsPageController controller = Get.put(SettingsPageController());
+
     return Scaffold(
-      appBar: AppBar(title: const Text('تنظیمات دستمزد'), centerTitle: true),
+      appBar: AppBar(title: const Text('تنظیمات'), centerTitle: true),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          children: <Widget>[
+            // ویجت برای تنظیمات تم (روشن/تاریک)
+            _CartWidget(
+              title: 'ظاهر روشن / تاریک',
+              icon: const Row(
+                children: <Widget>[Icon(Icons.dark_mode), Text('/'), Icon(Icons.light_mode_outlined)],
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.settings, color: Colors.blue),
-                        SizedBox(width: 8),
-                        Text(
-                          'حالت محاسبه',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    SegmentedButton<bool>(
-                      segments: const [
-                        ButtonSegment(
-                          value: true,
-                          label: Text('روزانه'),
-                          icon: Icon(Icons.calendar_today),
-                        ),
-                        ButtonSegment(
-                          value: false,
-                          label: Text('ساعتی'),
-                          icon: Icon(Icons.access_time),
-                        ),
-                      ],
-                      selected: {isDaily},
-                      onSelectionChanged: (set) {
-                        // setState(() => isDaily = set.first);
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              child: Obx(() {
+                return SwitchListTile(
+                  title: Text(controller.settingController.isDarkMode ? 'تیره' : 'روشن'),
+                  value: controller.settingController.isDarkMode,
+                  onChanged: (bool value) {
+                    controller.settingController.switchTheme(value);
+                  },
+                  activeTrackColor: Colors.blue.shade100,
+                  activeColor: Colors.blue,
+                  inactiveThumbColor: Colors.grey,
+                );
+              }),
             ),
-            const SizedBox(height: 16),
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.attach_money, color: Colors.green),
-                        SizedBox(width: 8),
-                        Text(
-                          'مقادیر دستمزد',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: dailyCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'دستمزد روزانه (تومان)',
-                        border: OutlineInputBorder(),
-                      ),
-                      inputFormatters: [
-                        // Use the custom formatter here
-                        ThousandSeparatorInputFormatter(),
-                      ],
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      readOnly: true,
+            const SizedBox(height: 16.0),
 
-                      // controller: hourlyCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'دستمزد ساعتی (تومان)',
-                        border: OutlineInputBorder(),
-                      ),
-                      inputFormatters: [
-                        // Use the custom formatter here
-                        ThousandSeparatorInputFormatter(),
-                      ],
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
+            // ویجت برای مقادیر دستمزد
+            _CartWidget(
+              title: 'مقادیر دستمزد',
+              icon: const Icon(Icons.attach_money, color: Colors.green),
+              child: TextField(
+                controller: controller.dailyCtrl, // استفاده از کنترلر متن از SettingsPageController
+                decoration: const InputDecoration(
+                  labelText: 'دستمزد روزانه (تومان)',
+                  border: OutlineInputBorder(),
                 ),
+                inputFormatters: <ThousandSeparatorInputFormatter>[ThousandSeparatorInputFormatter()],
+                keyboardType: TextInputType.number,
               ),
             ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.save),
-                label: const Text('ذخیره تنظیمات'),
-                onPressed: _save,
+
+            const SizedBox(height: 16.0),
+
+            // ویجت برای انتخاب کارفرمای پیش‌فرض
+            _CartWidget(
+              title: 'کارفرمای پیش فرض',
+              icon: const Icon(Icons.person_search, color: Colors.blue),
+              child: Obx(() {
+                return DropdownButtonFormField<int?>(
+                  value: controller.selectedEmployerId.value, // مقدار جاری از کنترلر
+                  decoration: const InputDecoration(
+                    labelText: 'انتخاب کارفرمای پیش فرض',
+                    border: OutlineInputBorder(),
+                  ),
+                  hint: const Text('کارفرمای پیش‌فرض را انتخاب کنید'),
+                  items: <DropdownMenuItem<int?>>[
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('انتخاب نشده (کارفرما باید هنگام ثبت انتخاب شود)'),
+                    ),
+                    // ساخت لیست DropdownMenuItem از لیست کارفرمایان موجود
+                    ...controller.employersController.employers.map((entry) {
+                      // فرض بر اینکه value از نوع EmployerModel است
+                      return DropdownMenuItem<int?>(value: entry.key, child: Text(entry.value.name));
+                    }),
+                  ],
+                  onChanged: (int? value) {
+                    controller.setSelectedEmployer(value); // به‌روزرسانی در کنترلر
+                  },
+                );
+              }),
+            ),
+            const SizedBox(height: 24.0),
+
+            // دکمه ذخیره تنظیمات
+            Center(
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width,
+                height: 40.0,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.save),
+                  label: const Text('ذخیره تنظیمات'),
+                  onPressed: controller.saveSettings, // فراخوانی متد ذخیره از کنترلر
+                ),
               ),
             ),
           ],
@@ -155,27 +107,39 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
+}
 
-  void _save() async {
-    final int daily =
-        int.tryParse(dailyCtrl.text.trim().replaceAll(',', '')) ?? 0;
-    final int hourly =
-        int.tryParse(hourlyCtrl.text.trim().replaceAll(',', '')) ?? 0;
-    final newSettings = WageSettings(
-      isDaily: isDaily,
-      dailyWage: daily,
-      hourlyWage: hourly,
+/// ویجت کارت عمومی برای نمایش یک بخش از تنظیمات.
+/// شامل یک عنوان، آیکون و محتوای سفارشی.
+class _CartWidget extends StatelessWidget {
+  const _CartWidget({required this.title, required this.icon, required this.child});
+
+  final String title;
+  final Widget icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4.0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                icon,
+                const SizedBox(width: 8.0),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12.0),
+            child,
+          ],
+        ),
+      ),
     );
-    await wageController.saveSettings(newSettings);
-    if (mounted) {
-      Get.back(result: 1);
-      Get.snackbar(
-        'موفق',
-        'تنظیمات ذخیره شد',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-      );
-      // Get.back();
-    }
   }
 }

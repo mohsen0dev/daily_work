@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shamsi_date/shamsi_date.dart' as sh;
+import 'package:persian_datetime_picker/persian_datetime_picker.dart' as sh;
+// import 'package:shamsi_date/shamsi_date.dart' as sh;
 import '../controllers/employers_controller.dart';
 
 /// یک ویجت نوار فیلتر قابل استفاده مجدد که امکان فیلتر کردن بر اساس کارفرما
@@ -46,7 +47,9 @@ class _SharedFilterBarState extends State<SharedFilterBar> {
   void initState() {
     super.initState();
     _selectedEmployerId = widget.initialSelectedEmployerId;
-    _selectedMonths = List.from(widget.initialSelectedMonths); // ایجاد کپی برای جلوگیری از تغییر مستقیم لیست والد
+    _selectedMonths = List.from(
+      widget.initialSelectedMonths,
+    ); // ایجاد کپی برای جلوگیری از تغییر مستقیم لیست والد
   }
 
   /// این متد برای همگام‌سازی state داخلی ویجت با state صفحه والد است.
@@ -86,15 +89,14 @@ class _SharedFilterBarState extends State<SharedFilterBar> {
       padding: const EdgeInsetsDirectional.fromSTEB(8, 12, 8, 12),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border.fromBorderSide(
-          BorderSide(color: context.theme.dividerColor.withAlpha(60)),
-        ),
+        border: Border.fromBorderSide(BorderSide(color: context.theme.dividerColor.withAlpha(60))),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(12),
           bottomRight: Radius.circular(12),
         ),
       ),
-      child: IntrinsicHeight( // برای هم‌قد کردن ویجت‌های داخل Row
+      child: IntrinsicHeight(
+        // برای هم‌قد کردن ویجت‌های داخل Row
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -106,20 +108,12 @@ class _SharedFilterBarState extends State<SharedFilterBar> {
                 isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'فیلتر کارفرما',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                 ),
                 items: [
-                  const DropdownMenuItem<int?>(
-                    value: null,
-                    child: Text('همه کارفرماها'),
-                  ),
+                  const DropdownMenuItem<int?>(value: null, child: Text('همه کارفرماها')),
                   ...widget.employersController.employers.map((entry) {
-                    return DropdownMenuItem<int?>(
-                      value: entry.key,
-                      child: Text(entry.value.name),
-                    );
+                    return DropdownMenuItem<int?>(value: entry.key, child: Text(entry.value.name));
                   }),
                 ],
                 onChanged: (v) {
@@ -136,16 +130,11 @@ class _SharedFilterBarState extends State<SharedFilterBar> {
                 style: ButtonStyle(
                   padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 8)),
                   shape: WidgetStateProperty.all(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
                 icon: const Icon(Icons.calendar_month_outlined),
-                label: Text(
-                  _getMonthButtonText(),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                label: Text(_getMonthButtonText(), overflow: TextOverflow.ellipsis),
                 onPressed: () async {
                   final pickedList = await _showMultiMonthPicker(
                     context,
@@ -202,17 +191,15 @@ class _SharedFilterBarState extends State<SharedFilterBar> {
 /// تابع کمکی برای نمایش دیالوگ انتخاب چندگانه ماه شمسی.
 /// [initialDate] تاریخ اولیه برای نمایش سال در تقویم.
 /// [initiallySelectedMonths] لیست ماه‌هایی که در ابتدا باید انتخاب شده باشند.
-Future<List<sh.Jalali>?> _showMultiMonthPicker(BuildContext context, {
+Future<List<sh.Jalali>?> _showMultiMonthPicker(
+  BuildContext context, {
   required sh.Jalali initialDate,
   required List<sh.Jalali> initiallySelectedMonths,
 }) async {
   return await showDialog<List<sh.Jalali>>(
     context: context,
     builder: (BuildContext context) {
-      return _MonthPickerDialog(
-        initialDate: initialDate,
-        initiallySelectedMonths: initiallySelectedMonths,
-      );
+      return _MonthPickerDialog(initialDate: initialDate, initiallySelectedMonths: initiallySelectedMonths);
     },
   );
 }
@@ -226,10 +213,7 @@ class _MonthPickerDialog extends StatefulWidget {
   final List<sh.Jalali> initiallySelectedMonths;
 
   /// سازنده _MonthPickerDialog.
-  const _MonthPickerDialog({
-    required this.initialDate,
-    required this.initiallySelectedMonths,
-  });
+  const _MonthPickerDialog({required this.initialDate, required this.initiallySelectedMonths});
 
   @override
   _MonthPickerDialogState createState() => _MonthPickerDialogState();
@@ -242,8 +226,18 @@ class _MonthPickerDialogState extends State<_MonthPickerDialog> {
 
   /// لیست ثابت نام ماه‌های شمسی.
   static const List<String> _monthNames = [
-    'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
-    'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند',
+    'فروردین',
+    'اردیبهشت',
+    'خرداد',
+    'تیر',
+    'مرداد',
+    'شهریور',
+    'مهر',
+    'آبان',
+    'آذر',
+    'دی',
+    'بهمن',
+    'اسفند',
   ];
 
   /// مقداردهی اولیه State دیالوگ با سال و ماه‌های انتخاب شده اولیه.
@@ -263,14 +257,8 @@ class _MonthPickerDialogState extends State<_MonthPickerDialog> {
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: () => setState(() => _selectedYear--),
-          ),
-          Text(
-            _selectedYear.toString(),
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => setState(() => _selectedYear--)),
+          Text(_selectedYear.toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
           IconButton(
             icon: const Icon(Icons.chevron_right),
             onPressed: () {
@@ -296,28 +284,33 @@ class _MonthPickerDialogState extends State<_MonthPickerDialog> {
             final monthDate = sh.Jalali(_selectedYear, month, 1);
 
             // تعیین اینکه آیا یک ماه قابل انتخاب است (نمی‌توان ماه‌های آینده را انتخاب کرد)
-            final bool isEnabled = _selectedYear < sh.Jalali.now().year ||
+            final bool isEnabled =
+                _selectedYear < sh.Jalali.now().year ||
                 (_selectedYear == sh.Jalali.now().year && month <= sh.Jalali.now().month);
 
             // بررسی اینکه آیا این ماه در حال حاضر انتخاب شده است
-            final bool isSelected = _selectedMonths.any((d) => d.year == monthDate.year && d.month == monthDate.month);
+            final bool isSelected = _selectedMonths.any(
+              (d) => d.year == monthDate.year && d.month == monthDate.month,
+            );
 
             return InkWell(
               onTap: isEnabled
                   ? () {
-                setState(() {
-                  if (isSelected) {
-                    _selectedMonths.removeWhere((d) => d.year == monthDate.year && d.month == monthDate.month);
-                  } else {
-                    _selectedMonths.add(monthDate);
-                  }
-                });
-              }
+                      setState(() {
+                        if (isSelected) {
+                          _selectedMonths.removeWhere(
+                            (d) => d.year == monthDate.year && d.month == monthDate.month,
+                          );
+                        } else {
+                          _selectedMonths.add(monthDate);
+                        }
+                      });
+                    }
                   : null, // اگر فعال نباشد، onTap نیز null است
               child: Container(
                 margin: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.2) : null,
+                  color: isSelected ? Theme.of(context).primaryColor.withAlpha(570) : null,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,

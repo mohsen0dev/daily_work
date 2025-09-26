@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shamsi_date/shamsi_date.dart' as sh;
-// removed unused persian_datetime_picker import
 import 'package:daily_work/utils/jalali_utils.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart' as sh;
 
-import '../controllers/wage_controller.dart';
+import '../controllers/setting_controller.dart';
 import '../controllers/workdays_controller.dart';
 import '../controllers/employers_controller.dart';
 import '../models/work_day.dart';
@@ -22,12 +21,11 @@ class DayFormPage extends StatefulWidget {
 
 class _DayFormPageState extends State<DayFormPage> {
   final WorkDaysController workDaysController = Get.find<WorkDaysController>();
-  final EmployersController employersController =
-      Get.find<EmployersController>();
-  final WageController wageController = Get.find<WageController>();
+  final EmployersController employersController = Get.find<EmployersController>();
+  final SettingController settingCtrl = Get.find<SettingController>();
   String? _employerErrorText;
   String? _wageErrorText;
-  late WorkDay? existingWorkDay;
+  late WorkDayModel? existingWorkDay;
   int? selectedEmployerId;
   bool worked = false;
   double hours = 8.0;
@@ -49,9 +47,9 @@ class _DayFormPageState extends State<DayFormPage> {
           ? existingWorkDay!.wage!.toString().toPriceString()
           : '';
     } else {
-      if (wageController.settings.value.dailyWage != 0) {
-        wageTextController.text = wageController.settings.value.dailyWage
-            .toPriceString();
+      selectedEmployerId = settingCtrl.settings.value.defaultEmployerId;
+      if (settingCtrl.settings.value.dailyWage != 0) {
+        wageTextController.text = settingCtrl.settings.value.dailyWage.toPriceString();
       } else {
         wageTextController.text = '1000000'.toPriceString();
       }
@@ -72,37 +70,21 @@ class _DayFormPageState extends State<DayFormPage> {
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: _showDeleteConfirmDialog,
             ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Get.toNamed('/settings')!.then((value) {
-              if (value == 1 && existingWorkDay == null) {
-                wageTextController.text = wageController
-                    .settings
-                    .value
-                    .dailyWage
-                    .toPriceString();
-              }
-            }),
-          ),
         ],
       ),
-      floatingActionButton:   SizedBox(
-        width:MediaQuery.of(context).size.width/1.5,
+      floatingActionButton: SizedBox(
+        width: MediaQuery.of(context).size.width / 1.3,
         height: 50,
         child: FilledButton(
-
           onPressed: _saveWorkDay,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 12),
           ),
-          child: Text(
-            existingWorkDay != null ? 'بروزرسانی' : 'ذخیره',
-            style: const TextStyle(fontSize: 16),
-          ),
+          child: Text(existingWorkDay != null ? 'بروزرسانی' : 'ذخیره', style: const TextStyle(fontSize: 16)),
         ),
       ),
-floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -115,33 +97,22 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
               builder: (context, value, child) {
                 return Opacity(
                   opacity: value,
-                  child: Transform.translate(
-                    offset: Offset(0, (1 - value) * 30),
-                    child: child,
-                  ),
+                  child: Transform.translate(offset: Offset(0, (1 - value) * 30), child: child),
                 );
               },
               child: Card(
                 elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: const [
+                      const Row(
+                        children: [
                           Icon(Icons.work, color: Colors.blue, size: 24),
                           SizedBox(width: 8),
-                          Text(
-                            'وضعیت کار',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          Text('وضعیت کار', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -175,36 +146,22 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
                           builder: (context, value, child) {
                             return Opacity(
                               opacity: value,
-                              child: Transform.translate(
-                                offset: Offset(0, (1 - value) * 30),
-                                child: child,
-                              ),
+                              child: Transform.translate(offset: Offset(0, (1 - value) * 30), child: child),
                             );
                           },
                           child: Card(
                             elevation: 5,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    children: const [
-                                      Icon(
-                                        Icons.person_search,
-                                        color: Colors.blue,
-                                        size: 22,
-                                      ),
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.person_search, color: Colors.blue, size: 22),
                                       SizedBox(width: 8),
-                                      Text(
-                                        'انتخاب کارفرما',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      Text('انتخاب کارفرما', style: TextStyle(fontWeight: FontWeight.bold)),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
@@ -217,9 +174,7 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
                                       errorText: _employerErrorText,
                                     ),
                                     hint: const Text('کارفرما را انتخاب کنید'),
-                                    items: employersController.employers.map((
-                                      entry,
-                                    ) {
+                                    items: employersController.employers.map((entry) {
                                       return DropdownMenuItem<int?>(
                                         value: entry.key,
                                         child: Text(entry.value.name),
@@ -235,20 +190,11 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
                                     },
                                   ),
                                   const SizedBox(height: 16),
-                                  Row(
-                                    children: const [
-                                      Icon(
-                                        Icons.access_time,
-                                        color: Colors.purple,
-                                        size: 22,
-                                      ),
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.access_time, color: Colors.purple, size: 22),
                                       SizedBox(width: 8),
-                                      Text(
-                                        'ساعت کاری',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      Text('ساعت کاری', style: TextStyle(fontWeight: FontWeight.bold)),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
@@ -259,14 +205,8 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
                                       border: OutlineInputBorder(),
                                     ),
                                     items: const [
-                                      DropdownMenuItem(
-                                        value: 'full',
-                                        child: Text('یک روز'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'half',
-                                        child: Text('نصف روز'),
-                                      ),
+                                      DropdownMenuItem(value: 'full', child: Text('یک روز')),
+                                      DropdownMenuItem(value: 'half', child: Text('نصف روز')),
                                     ],
                                     onChanged: (value) {
                                       setState(() {
@@ -276,20 +216,11 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
                                     },
                                   ),
                                   const SizedBox(height: 16),
-                                  Row(
-                                    children: const [
-                                      Icon(
-                                        Icons.attach_money,
-                                        color: Colors.green,
-                                        size: 22,
-                                      ),
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.attach_money, color: Colors.green, size: 22),
                                       SizedBox(width: 8),
-                                      Text(
-                                        'مبلغ دستمزد *',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      Text('مبلغ دستمزد *', style: TextStyle(fontWeight: FontWeight.bold)),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
@@ -307,8 +238,7 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
                                     ],
                                     onChanged: (value) {
                                       // با هر تغییر، سعی کن خطا را پاک کنی (اعتبارسنجی اصلی در ذخیره است)
-                                      if (value.isNotEmpty &&
-                                          _wageErrorText != null) {
+                                      if (value.isNotEmpty && _wageErrorText != null) {
                                         setState(() {
                                           _wageErrorText = null;
                                         });
@@ -334,13 +264,7 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'توضیحات',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    const Text('توضیحات', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     TextField(
                       controller: descriptionController,
@@ -426,7 +350,7 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
 
     // اگر `worked` نباشد، `employerId` و `wage` می‌توانند null باشند یا مقدار پیش‌فرض بگیرند
     final jalaliDate = JalaliUtils.formatFromJalali(widget.selectedDate);
-    final workDay = WorkDay(
+    final workDay = WorkDayModel(
       jalaliDate: jalaliDate,
       employerId: worked ? selectedEmployerId : null,
       // اگر کار نکرده، کارفرما مهم نیست
@@ -434,11 +358,8 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       hours: worked ? hours : 0,
       wage: worked ? wageValue : null,
       // اگر کار نکرده، دستمزد صفر یا null است
-      description: descriptionController.text.trim().isEmpty
-          ? null
-          : descriptionController.text.trim(),
+      description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
     );
-    print('tarikh (Jalali)==$jalaliDate');
     workDaysController.upsertDay(workDay);
     Get.back();
   }
@@ -448,14 +369,9 @@ floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('تأیید حذف'),
-        content: const Text(
-          'آیا مطمئن هستید که می‌خواهید اطلاعات این روز را حذف کنید؟',
-        ),
+        content: const Text('آیا مطمئن هستید که می‌خواهید اطلاعات این روز را حذف کنید؟'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('لغو'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('لغو')),
           ElevatedButton(
             onPressed: () {
               workDaysController.deleteByJalali(widget.selectedDate);
