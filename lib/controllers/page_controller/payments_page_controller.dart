@@ -47,7 +47,7 @@ class PaymentsPageController extends GetxController {
   final Rx<p.Jalali> dialogSelectedDate = p.Jalali.now().obs;
   final RxString employerErrorText = ''.obs; // برای نمایش خطای اعتبارسنجی کارفرما
   final RxList<PaymentSummary> _currentProcessedSummaries = <PaymentSummary>[].obs;
-  List<PaymentSummary> get processedSummaries => _currentProcessedSummaries.value; // یک گتر ساده
+  List<PaymentSummary> get processedSummaries => _currentProcessedSummaries; // یک گتر ساده
 
   @override
   void onInit() {
