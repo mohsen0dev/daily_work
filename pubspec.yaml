@@ -25,6 +25,7 @@ dependencies:
   printing: ^5.14.2
   path_provider: ^2.1.5
   share_plus: ^12.0.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -38,7 +39,7 @@ flutter:
   uses-material-design: true
 
   assets:
-  #   - images/a_dot_ham.jpeg
+    - assets/images/
 
     - assets/fonts/ # اگر پوشه assets دارید، فونت را در اینجا قرار دهید
   fonts:

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../controllers/page_controller/about_page_controller.dart';
 import '../controllers/page_controller/settings_page_controller.dart'; // **کنترلر جدید صفحه تنظیمات**
 import '../utils/formater.dart'; // برای ThousandSeparatorInputFormatter
 
@@ -74,7 +75,7 @@ class SettingsPage extends StatelessWidget {
                   items: <DropdownMenuItem<int?>>[
                     const DropdownMenuItem<int?>(
                       value: null,
-                      child: Text('انتخاب نشده (کارفرما باید هنگام ثبت انتخاب شود)'),
+                      child: Text('انتخاب نشده (هنگام ثبت انتخاب شود)'),
                     ),
                     // ساخت لیست DropdownMenuItem از لیست کارفرمایان موجود
                     ...controller.employersController.employers.map((entry) {
@@ -88,6 +89,29 @@ class SettingsPage extends StatelessWidget {
                 );
               }),
             ),
+            const SizedBox(height: 16),
+            _CartWidget(
+              title: ' درباره برنامه',
+              icon: const Icon(Icons.info_outline),
+              child: Center(
+                child: SizedBox(
+                  width: MediaQuery.sizeOf(context).width - 100,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.email),
+                    onPressed: () {
+                      Get.lazyPut(() => AboutController());
+                      Get.toNamed('/about'); // ناوبری به صفحه AboutPage
+                    },
+                    label: const Text('درباره برنامه'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 18.0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+                      side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: 24.0),
 
             // دکمه ذخیره تنظیمات
@@ -95,10 +119,13 @@ class SettingsPage extends StatelessWidget {
               child: SizedBox(
                 width: MediaQuery.of(context).size.width,
                 height: 40.0,
-                child: ElevatedButton.icon(
+                child: FilledButton.icon(
                   icon: const Icon(Icons.save),
                   label: const Text('ذخیره تنظیمات'),
                   onPressed: controller.saveSettings, // فراخوانی متد ذخیره از کنترلر
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+                  ),
                 ),
               ),
             ),

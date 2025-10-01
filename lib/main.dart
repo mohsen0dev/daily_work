@@ -2,6 +2,7 @@ import 'package:daily_work/controllers/employers_controller.dart';
 import 'package:daily_work/controllers/payments_controller.dart';
 import 'package:daily_work/controllers/setting_controller.dart';
 import 'package:daily_work/controllers/workdays_controller.dart';
+import 'package:daily_work/pages/about_page.dart';
 import 'package:daily_work/utils/back_button_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -98,7 +99,6 @@ class MyApp extends StatelessWidget {
         ),
       ),
       darkTheme: ThemeData(
-        // <<< CHANGE: Create a new ThemeData for dark theme
         useMaterial3: true,
         fontFamily: 'yekan', // Correctly set for dark theme
         brightness: Brightness.dark, // Essential for dark theme behavior
@@ -116,36 +116,13 @@ class MyApp extends StatelessWidget {
           onSurface: Colors.white70,
           seedColor: Colors.tealAccent,
         ),
-        // Add other dark theme properties here as needed
-        // For example, if you want specific text themes for dark mode:
-        // textTheme: const TextTheme(
-        //   bodyMedium: TextStyle(color: Colors.white70, fontFamily: 'sans'),
-        //   // etc.
-        // ),
       ),
 
-      // darkTheme: ThemeData(useMaterial3: true, fontFamily: 'vazir').copyWith(
-      //   // The `fontFamily` parameter should be passed to `copyWith` directly,
-      //   // as `ThemeData.dark()` itself does not have a `fontFamily` parameter.
-      //   // <<< Dark theme font set correctly here
-      //   brightness: Brightness.dark,
-      //   primaryColor: Colors.tealAccent,
-      //   scaffoldBackgroundColor: Colors.grey[900],
-      //   colorScheme: ColorScheme.fromSeed(
-      //     brightness: Brightness.dark,
-      //     primary: Colors.tealAccent,
-      //     onPrimary: Colors.black,
-      //     secondary: Colors.deepOrangeAccent,
-      //     onSecondary: Colors.white,
-      //     error: Colors.redAccent,
-      //     onError: Colors.black,
-      //     surface: Colors.grey[900]!,
-      //     onSurface: Colors.white70,
-      //     seedColor: Colors.tealAccent,
-      //   ),
-      // ),
       home: const MainNavigationPage(),
-      getPages: [GetPage(name: '/settings', page: SettingsPage.new)],
+      getPages: [
+        GetPage(name: '/settings', page: SettingsPage.new),
+        GetPage(name: '/about', page: AboutPage.new),
+      ],
     );
   }
 }
