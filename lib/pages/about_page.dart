@@ -137,18 +137,18 @@ class AboutPage extends GetView<AboutController> {
             ),
             const SizedBox(height: 20),
             // دکمه تماس با ایمیل
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                icon: const Icon(Icons.email),
-                label: const Text('ارسال ایمیل'),
-                onPressed: controller.sendEmail,
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12.0),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-                ),
-              ),
-            ),
+            // SizedBox(
+            //   width: double.infinity,
+            //   child: FilledButton.icon(
+            //     icon: const Icon(Icons.email),
+            //     label: const Text('ارسال ایمیل'),
+            //     onPressed: controller.sendEmail,
+            //     style: FilledButton.styleFrom(
+            //       padding: const EdgeInsets.symmetric(vertical: 12.0),
+            //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+            //     ),
+            //   ),
+            // ),
             const SizedBox(height: 12),
             // دکمه بازدید از وب‌سایت
             SizedBox(

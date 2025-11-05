@@ -437,10 +437,20 @@ class _BalancePageState extends State<BalancePage> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        overallBalance >= 0 ? 'شما طلبکار هستید' : 'شما بدهکار هستید',
+                        overallBalance == 0
+                            ? 'حساب شما تسویه است'
+                            : overallBalance > 0
+                            ? 'شما طلبکار هستید'
+                            : overallBalance < 0
+                            ? 'شما بدهکار هستید'
+                            : '',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: overallBalance >= 0 ? Colors.green : Colors.red,
+                          color: overallBalance == 0
+                              ? Colors.blue
+                              : overallBalance > 0
+                              ? Colors.green
+                              : Colors.red,
                         ),
                       ),
                     ],
@@ -671,7 +681,11 @@ class _BalancePageState extends State<BalancePage> {
         .where((r) => r.type == 'دریافتی')
         .fold<int>(0, (sum, r) => sum + r.amount);
     final int currentBalance = currentTotalEarned - currentTotalPayments;
-    final String currentBalanceStatus = currentBalance >= 0 ? 'شما طلبکار هستید' : 'شما بدهکار هستید';
+    final String currentBalanceStatus = currentBalance == 0
+        ? 'حساب شما تسویه است'
+        : currentBalance >= 0
+        ? 'شما طلبکار هستید'
+        : 'شما بدهکار هستید';
 
     // --- تولید گزارش بر اساس فرمت انتخاب شده ---
     String? finalReportContent; // Make nullable for PDF case

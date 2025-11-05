@@ -109,9 +109,7 @@ class PaymentsPageController extends GetxController {
 
   void _setDefaultMonthFilter() {
     final now = p.Jalali.now();
-    print('select mont=${selectedMonths.toString()}');
     selectedMonths.assignAll([p.Jalali(now.year, now.month, 1)]);
-    print('select mont2=${selectedMonths.toString()}');
   }
 
   void onEmployerChanged(int? newId) {

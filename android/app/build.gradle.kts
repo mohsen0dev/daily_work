@@ -25,13 +25,38 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.gmail.farajiMohsen.daily_work"
-        // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
+    flavorDimensions += listOf("abi")
+    productFlavors {
+        create("armv7a") {
+            dimension = "abi"
+            ndk {
+                abiFilters += listOf("armeabi-v7a")
+            }
+            versionCode = 1011
+        }
+        create("arm64") {
+            dimension = "abi"
+            ndk {
+                abiFilters += listOf("arm64-v8a")
+            }
+            versionCode = 1012
+        }
+        create("x86_64") {
+            dimension = "abi"
+            ndk {
+                abiFilters += listOf("x86_64")
+            }
+            versionCode = 1013
+        }
+    }
+
+    
 
     signingConfigs {
         create("release") {
@@ -62,3 +87,8 @@ android {
 flutter {
     source = "../.."
 }
+
+// برای ساخت هر خروجی، دستور زیر را اجرا کنید:
+// flutter build apk --flavor armv7a --release
+// flutter build apk --flavor arm64 --release
+// flutter build apk --flavor x86_64 --release

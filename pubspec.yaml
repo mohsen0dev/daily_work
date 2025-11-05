@@ -3,10 +3,10 @@ description: "A new Flutter project."
 
 publish_to: "none"
 
-version: 1.0.0+1
+version: 1.0.1+101
 
 environment:
-  sdk: ^3.8.1
+  sdk: ^3.9.2
 
 dependencies:
   flutter:
@@ -55,4 +55,3 @@ flutter:
     - family: koodak
       fonts:
         - asset: assets/fonts/koodak.ttf
-

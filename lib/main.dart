@@ -116,6 +116,7 @@ class MyApp extends StatelessWidget {
           onSurface: Colors.white70,
           seedColor: Colors.tealAccent,
         ),
+        
       ),
 
       home: const MainNavigationPage(),

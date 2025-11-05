@@ -71,24 +71,24 @@ class AboutController extends GetxController with GetSingleTickerProviderStateMi
 
   /// تابع ارسال ایمیل به توسعه‌دهنده.
   /// با استفاده از `url_launcher` کلاینت ایمیل را باز می‌کند.
-  void sendEmail() async {
-    final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-      path: developerEmail,
-      queryParameters: {'subject': 'بازخورد درباره برنامه روز کار  '},
-    );
-    if (await canLaunchUrl(emailLaunchUri)) {
-      await launchUrl(emailLaunchUri);
-    } else {
-      Get.snackbar(
-        'خطا',
-        'امکان ارسال ایمیل وجود ندارد. لطفا آدرس ایمیل را کپی کنید.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white,
-      );
-    }
-  }
+  // void sendEmail() async {
+  //   final Uri emailLaunchUri = Uri(
+  //     scheme: 'mailto',
+  //     path: developerEmail,
+  //     queryParameters: {'subject': 'بازخورد درباره برنامه روز کار  '},
+  //   );
+  //   if (await canLaunchUrl(emailLaunchUri)) {
+  //     await launchUrl(emailLaunchUri);
+  //   } else {
+  //     Get.snackbar(
+  //       'خطا',
+  //       'امکان ارسال ایمیل وجود ندارد. لطفا آدرس ایمیل را کپی کنید.',
+  //       snackPosition: SnackPosition.BOTTOM,
+  //       backgroundColor: Colors.red.withOpacity(0.8),
+  //       colorText: Colors.white,
+  //     );
+  //   }
+  // }
 
   /// تابع باز کردن وب‌سایت توسعه‌دهنده.
   /// با استفاده از `url_launcher` مرورگر را باز می‌کند.
@@ -101,7 +101,7 @@ class AboutController extends GetxController with GetSingleTickerProviderStateMi
         'خطا',
         'اپلیکیشن مایکت پیدا نشد',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
+        backgroundColor: Colors.red.withValues(alpha: 0.8),
         colorText: Colors.white,
       );
     }

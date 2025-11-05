@@ -74,16 +74,24 @@ class _CalendarPageState extends State<CalendarPage> {
               workDaysController.update();
             },
           ),
-          IconButton(icon: const Icon(Icons.settings), onPressed: () => Get.toNamed('/settings')),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => Get.toNamed('/settings'),
+          ),
         ],
       ),
       // Use Obx to rebuild the widget when any Rx variable changes.
       body: SingleChildScrollView(
         child: Obx(() {
           final monthLength = _focusedJalali.monthLength;
-          final firstWeekDay = Jalali(_focusedJalali.year, _focusedJalali.month, 1).weekDay;
+          final firstWeekDay = Jalali(
+            _focusedJalali.year,
+            _focusedJalali.month,
+            1,
+          ).weekDay;
           final today = Jalali.now();
-          final List<Widget> dayWidgets = []; // استفاده از const در صورت امکان برای محتویات
+          final List<Widget> dayWidgets =
+              []; // استفاده از const در صورت امکان برای محتویات
 
           // اضافه کردن فضاهای خالی برای روزهای اول هفته که در ماه قبل هستند
           for (int i = 1; i < firstWeekDay; i++) {
@@ -95,7 +103,10 @@ class _CalendarPageState extends State<CalendarPage> {
             final jd = Jalali(_focusedJalali.year, _focusedJalali.month, day);
             final wd = workDaysController.getByJalali(jd);
             final bool worked = wd?.worked == true;
-            final bool isToday = (jd.year == today.year && jd.month == today.month && jd.day == today.day);
+            final bool isToday =
+                (jd.year == today.year &&
+                jd.month == today.month &&
+                jd.day == today.day);
             final bool isSelected = day == _selectedDay.value;
 
             dayWidgets.add(
@@ -107,15 +118,23 @@ class _CalendarPageState extends State<CalendarPage> {
                   // After returning from DayFormPage, force a data refresh.
                   workDaysController.update();
                 },
-                child: _DayCell(jd: jd, worked: worked, isToday: isToday, isSelected: isSelected),
+                child: _DayCell(
+                  jd: jd,
+                  worked: worked,
+                  isToday: isToday,
+                  isSelected: isSelected,
+                ),
               ),
             );
           }
           // فیلتر کردن روزهای کاری ماه جاری
-          final currentMonthWorkdays = workDaysController.workdays.values.where((wd) {
-            final workdayJalali = JalaliUtils.parseJalali(wd.jalaliDate);
-            return workdayJalali.year == _focusedJalali.year && workdayJalali.month == _focusedJalali.month;
-          }).toList();
+          final currentMonthWorkdays = workDaysController.workdays.values.where(
+            (wd) {
+              final workdayJalali = JalaliUtils.parseJalali(wd.jalaliDate);
+              return workdayJalali.year == _focusedJalali.year &&
+                  workdayJalali.month == _focusedJalali.month;
+            },
+          ).toList();
 
           // محاسبه تعداد روزهای کارکرد (بر اساس مجموع ساعات تقسیم بر 8)
           final double workedDaysCount = currentMonthWorkdays
@@ -126,12 +145,18 @@ class _CalendarPageState extends State<CalendarPage> {
               : workedDaysCount.toStringAsFixed(1);
 
           // محاسبه مجموع دستمزد ماه جاری
-          final int totalWageForMonth = currentMonthWorkdays.fold<int>(0, (sum, wd) => sum + (wd.wage ?? 0));
+          final int totalWageForMonth = currentMonthWorkdays.fold<int>(
+            0,
+            (sum, wd) => sum + (wd.wage ?? 0),
+          );
           final String formattedWage = totalWageForMonth.toPriceString();
 
           final currentMonthPayments = paymentsController.payments.where((p) {
-            final paymentJalali = JalaliUtils.parseJalali(p.value.jalaliDate); // p.value
-            return paymentJalali.year == _focusedJalali.year && paymentJalali.month == _focusedJalali.month;
+            final paymentJalali = JalaliUtils.parseJalali(
+              p.value.jalaliDate,
+            ); // p.value
+            return paymentJalali.year == _focusedJalali.year &&
+                paymentJalali.month == _focusedJalali.month;
           }).toList();
 
           // محاسبه مجموع دریافتی ماه جاری
@@ -139,7 +164,8 @@ class _CalendarPageState extends State<CalendarPage> {
             0,
             (sum, p) => sum + p.value.amount,
           );
-          final String formattedPayments = totalPaymentsForMonth.toPriceString();
+          final String formattedPayments = totalPaymentsForMonth
+              .toPriceString();
           // ---------- پایان منطق محاسبات برای خلاصه ماه ----------
 
           return Center(
@@ -171,18 +197,35 @@ class _CalendarPageState extends State<CalendarPage> {
                   const SizedBox(height: 18),
                   Container(
                     // width: MediaQuery.of(context).size.width-32,
-                    padding: const EdgeInsetsDirectional.symmetric(vertical: 10, horizontal: 40),
+                    padding: const EdgeInsetsDirectional.symmetric(
+                      vertical: 10,
+                      horizontal: 40,
+                    ),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Theme.of(context).dividerColor.withAlpha(100)),
+                      border: Border.all(
+                        color: Theme.of(context).dividerColor.withAlpha(100),
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        NoteWorks(title: 'تعداد روزهای کارکرد', value: formattedWorkedDays, numberic: false),
+                        NoteWorks(
+                          title: 'تعداد روزهای کارکرد',
+                          value: formattedWorkedDays,
+                          numberic: false,
+                        ),
 
-                        NoteWorks(title: 'مجموع دستمزد ماه جاری', value: formattedWage, numberic: true),
-                        NoteWorks(title: 'مجموع دریافتی ماه جاری', value: formattedPayments, numberic: true),
+                        NoteWorks(
+                          title: 'مجموع دستمزد ماه جاری',
+                          value: formattedWage,
+                          numberic: true,
+                        ),
+                        NoteWorks(
+                          title: 'مجموع دریافتی ماه جاری',
+                          value: formattedPayments,
+                          numberic: true,
+                        ),
                       ],
                     ),
                   ),
@@ -198,7 +241,12 @@ class _CalendarPageState extends State<CalendarPage> {
 
 /// ویجت نمایش دهنده خلاصه‌ای از آمار ماهانه (مثلاً تعداد روزهای کاری، دستمزد
 class NoteWorks extends StatelessWidget {
-  const NoteWorks({super.key, required this.title, required this.value, this.numberic = false});
+  const NoteWorks({
+    super.key,
+    required this.title,
+    required this.value,
+    this.numberic = false,
+  });
 
   final String title;
   final String value;
@@ -229,15 +277,25 @@ class _DayCell extends StatelessWidget {
   final bool isSelected;
 
   /// سازنده _DayCell.
-  const _DayCell({required this.jd, required this.worked, required this.isToday, this.isSelected = false});
+  const _DayCell({
+    required this.jd,
+    required this.worked,
+    required this.isToday,
+    this.isSelected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    Color textColor = Get.theme.textTheme.bodyMedium!.color!;
     Color bg;
     if (worked) {
       bg = Colors.blue.shade100;
     } else {
       bg = Colors.transparent;
+    }
+    final bool isFriday = jd.weekDay == 7;
+    if (isFriday) {
+      textColor = Colors.red; // جمعه قرمز
     }
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
@@ -267,7 +325,7 @@ class _DayCell extends StatelessWidget {
           '${jd.day}',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: worked ? Colors.blue.shade900 : null, // استفاده از !
+            color: worked ? Colors.blue.shade900 : textColor, // استفاده از !
             fontSize: worked ? 16 : 14,
           ),
         ),

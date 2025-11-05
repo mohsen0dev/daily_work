@@ -43,11 +43,11 @@ class PaymentsPage extends StatelessWidget {
                   return const Center(child: Text('هیچ دریافتی ثبت نشده است'));
                 }
 
-                final RxList<PaymentSummary>? summariesToRender = controller.processedSummariess;
+                final RxList<PaymentSummary> summariesToRender = controller.processedSummariess;
                 final bool showNoEmployerPaymentsMessage = controller.showNoEmployerPaymentsMessage;
 
                 return ListView.builder(
-                  itemCount: summariesToRender!.length + (showNoEmployerPaymentsMessage ? 1 : 0),
+                  itemCount: summariesToRender.length + (showNoEmployerPaymentsMessage ? 1 : 0),
                   itemBuilder: (BuildContext context, int index) {
                     if (index == 0) {
                       // آیتم اول همیشه کارت "کل دریافتی‌ها" است
