@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../controllers/page_controller/about_page_controller.dart';
-import '../controllers/page_controller/settings_page_controller.dart'; // **کنترلر جدید صفحه تنظیمات**
+import '../controllers/setting_controller.dart';
+import '../services/backup_restore_service.dart';
 import '../utils/formater.dart'; // برای ThousandSeparatorInputFormatter
 
 /// صفحه تنظیمات
@@ -14,7 +14,8 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // تزریق کنترلر صفحه تنظیمات
-    final SettingsPageController controller = Get.put(SettingsPageController());
+    final SettingsController controllerSeting = Get.put(SettingsController());
+    Get.put(BackupRestoreService());
 
     return Scaffold(
       appBar: AppBar(title: const Text('تنظیمات'), centerTitle: true),
@@ -31,33 +32,37 @@ class SettingsPage extends StatelessWidget {
               ),
               child: Obx(() {
                 return SwitchListTile(
-                  title: Text(controller.settingController.isDarkMode ? 'تیره' : 'روشن'),
-                  value: controller.settingController.isDarkMode,
+                  title: Text(controllerSeting.isDarkMode ? 'تیره' : 'روشن'),
+                  value: controllerSeting.isDarkMode,
                   onChanged: (bool value) {
-                    controller.settingController.switchTheme(value);
+                    controllerSeting.switchTheme(value);
                   },
-                  activeTrackColor: Colors.blue.shade100,
-                  activeColor: Colors.blue,
-                  inactiveThumbColor: Colors.grey,
+                  activeTrackColor: Colors.blueGrey,
+                  activeThumbColor: Colors.tealAccent,
+                  inactiveThumbColor: Colors.blue,
                 );
               }),
             ),
             const SizedBox(height: 16.0),
 
             // ویجت برای مقادیر دستمزد
-            _CartWidget(
-              title: 'مقادیر دستمزد',
-              icon: const Icon(Icons.attach_money, color: Colors.green),
-              child: TextField(
-                controller: controller.dailyCtrl, // استفاده از کنترلر متن از SettingsPageController
-                decoration: const InputDecoration(
-                  labelText: 'دستمزد روزانه (تومان)',
-                  border: OutlineInputBorder(),
+            Obx(() {
+              return _CartWidget(
+                title: 'مقادیر دستمزد',
+                icon: const Icon(Icons.attach_money, color: Colors.green),
+                child: TextField(
+                  key: ValueKey(controllerSeting.dailyWage.value), // **تغییر کلیدی:** برای اطمینان از rebuild
+                  // **تغییر مهم:** استفاده از .value برای دسترسی به TextEditingController واقعی
+                  controller: controllerSeting.dailyCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'دستمزد روزانه (تومان)',
+                    border: OutlineInputBorder(),
+                  ),
+                  inputFormatters: <ThousandSeparatorInputFormatter>[ThousandSeparatorInputFormatter()],
+                  keyboardType: TextInputType.number,
                 ),
-                inputFormatters: <ThousandSeparatorInputFormatter>[ThousandSeparatorInputFormatter()],
-                keyboardType: TextInputType.number,
-              ),
-            ),
+              );
+            }),
 
             const SizedBox(height: 16.0),
 
@@ -67,7 +72,7 @@ class SettingsPage extends StatelessWidget {
               icon: const Icon(Icons.person_search, color: Colors.blue),
               child: Obx(() {
                 return DropdownButtonFormField<int?>(
-                  initialValue: controller.selectedEmployerId.value, // مقدار جاری از کنترلر
+                  initialValue: controllerSeting.selectedEmployerId.value, // مقدار جاری از کنترلر
                   decoration: const InputDecoration(
                     labelText: 'انتخاب کارفرمای پیش فرض',
                     border: OutlineInputBorder(),
@@ -78,14 +83,15 @@ class SettingsPage extends StatelessWidget {
                       value: null,
                       child: Text('انتخاب نشده (هنگام ثبت انتخاب شود)'),
                     ),
+
                     // ساخت لیست DropdownMenuItem از لیست کارفرمایان موجود
-                    ...controller.employersController.employers.map((entry) {
-                      // فرض بر اینکه value از نوع EmployerModel است
+                    ...controllerSeting.employersController.employers.map((entry) {
+                      //   // فرض بر اینکه value از نوع EmployerModel است
                       return DropdownMenuItem<int?>(value: entry.key, child: Text(entry.value.name));
                     }),
                   ],
                   onChanged: (int? value) {
-                    controller.setSelectedEmployer(value); // به‌روزرسانی در کنترلر
+                    controllerSeting.setSelectedEmployer(value); // به‌روزرسانی در کنترلر
                   },
                 );
               }),
@@ -100,7 +106,7 @@ class SettingsPage extends StatelessWidget {
                     child:
                         // اتصال دکمه پشتیبان‌گیری به متد کنترلر
                         ElevatedButton.icon(
-                          onPressed: controller.performBackup,
+                          onPressed: controllerSeting.backupData,
                           icon: const Icon(Icons.save_alt_outlined),
                           label: const Text('پشتیبان‌گیری'),
                           style: ElevatedButton.styleFrom(
@@ -118,7 +124,7 @@ class SettingsPage extends StatelessWidget {
                     child:
                         // اتصال دکمه بازیابی به متد کنترلر
                         ElevatedButton.icon(
-                          onPressed: controller.performRestore,
+                          onPressed: controllerSeting.restoreData,
                           icon: const Icon(Icons.restore_outlined),
                           label: const Text('بازیابی اطلاعات'),
                           style: ElevatedButton.styleFrom(
@@ -143,7 +149,6 @@ class SettingsPage extends StatelessWidget {
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.email),
                     onPressed: () {
-                      Get.lazyPut(() => AboutController());
                       Get.toNamed('/about'); // ناوبری به صفحه AboutPage
                     },
                     label: const Text('درباره برنامه'),
@@ -167,7 +172,9 @@ class SettingsPage extends StatelessWidget {
                 child: FilledButton.icon(
                   icon: const Icon(Icons.save),
                   label: const Text('ذخیره تنظیمات'),
-                  onPressed: controller.saveSettings, // فراخوانی متد ذخیره از کنترلر
+                  onPressed: () {
+                    controllerSeting.saveSettings;
+                  }, // فراخوانی متد ذخیره از کنترلر
                   style: FilledButton.styleFrom(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
                   ),

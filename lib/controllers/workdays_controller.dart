@@ -6,40 +6,64 @@ import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart' as sh;
 
+/// کنترلر مدیریت روزهای کاری و ارتباط با Hive.
 class WorkDaysController extends GetxController {
-  // Directly get the already opened box
+  /// باکس Hive برای ذخیره مدل‌های WorkDayModel.
   Box<WorkDayModel>? _workdayBox;
 
+  /// نقشه واکنشی برای نگهداری روزهای کاری (کلید: تاریخ جلالی، مقدار: WorkDayModel).
   final RxMap<String, WorkDayModel> workdays = <String, WorkDayModel>{}.obs;
 
-  Future<void> init() async {
+  @override
+  void onInit() {
+    super.onInit();
+    _initWorkdayBox(); // فراخوانی متد راه‌اندازی باکس Hive
+  }
+
+  /// متد خصوصی برای باز کردن باکس Hive و تنظیم شنونده.
+  Future<void> _initWorkdayBox() async {
     if (!Hive.isBoxOpen('workdays')) {
       _workdayBox = await Hive.openBox<WorkDayModel>('workdays');
     } else {
       _workdayBox = Hive.box<WorkDayModel>('workdays');
     }
-    _refresh();
-    _workdayBox?.listenable().addListener(_refresh);
+    _refreshWorkdays(); // بارگذاری اولیه داده‌ها
+    _workdayBox?.listenable().addListener(_refreshWorkdays); // گوش دادن به تغییرات Hive
   }
 
-  void _refresh() {
-    if (_workdayBox == null) return;
+  /// به‌روزرسانی نقشه workdays از باکس Hive.
+  void _refreshWorkdays() {
+    if (_workdayBox == null) {
+      return;
+    }
     try {
-      final Map<String, WorkDayModel> data = _workdayBox!.toMap().map(
-        (key, value) => MapEntry(key.toString(), value),
-      );
-      workdays.value = data;
+      final Map<String, WorkDayModel> data = {}; // ساخت یک Map جدید
+      for (var entry in _workdayBox!.toMap().entries) {
+        final String key = entry.key.toString(); // اطمینان از تبدیل کلید به رشته
+        final WorkDayModel value = entry.value;
+        data[key] = value;
+      }
+      workdays.assignAll(data); // به‌روزرسانی RxMap که Obx را فعال می‌کند
     } catch (e) {
-      debugPrint('Error refreshing workdays: $e');
+      debugPrint('Error refreshing workdays from box: $e'); // لاگ خطا را برای اشکال‌زدایی حفظ می‌کنیم
     }
   }
 
+  /// override کردن متد update از GetxController برای اطمینان از به‌روزرسانی داده‌ها.
+  @override
+  void update([List<Object>? ids, bool condition = true]) {
+    _refreshWorkdays(); // اطمینان از به‌روزرسانی RxMap workdays با آخرین داده‌ها
+    super.update(ids, condition); // فراخوانی متد اصلی برای اطلاع‌رسانی به GetBuilderها
+  }
+
+  /// ذخیره یا به‌روزرسانی یک روز کاری.
+  /// [day] مدل روز کاری برای ذخیره.
   Future<void> upsertDay(WorkDayModel day) async {
-    final key = _keyFromJalaliDate(day.jalaliDate);
-    // Auto-calc wage if not provided and worked is true
+    final key = _keyFromJalali(JalaliUtils.parseJalali(day.jalaliDate));
+    // محاسبه خودکار دستمزد در صورت عدم ارائه و اگر روز کاری فعال باشد
     if (day.worked && day.wage == null) {
       try {
-        final SettingController wageController = Get.find<SettingController>();
+        final SettingsController wageController = Get.find<SettingsController>();
         final s = wageController.settings.value;
         final computed = s.isDaily ? s.dailyWage : (day.hours * s.hourlyWage).round();
         day = WorkDayModel(
@@ -51,38 +75,54 @@ class WorkDaysController extends GetxController {
           wage: computed,
         );
       } catch (e) {
-        // If WageController is not available, fallback to provided value (null)
+        debugPrint('Error in upsertDay calculating wage: $e'); // لاگ خطا را حفظ می‌کنیم
       }
     }
     await _workdayBox!.put(key, day);
+    // نیازی به فراخوانی _refreshWorkdays اینجا نیست چون شنونده Hive آن را انجام می‌دهد.
   }
 
+  /// دریافت مدل روز کاری بر اساس تاریخ جلالی (فرمت رشته‌ای).
+  /// [jalaliDate] تاریخ جلالی به صورت رشته.
+  /// برمی‌گرداند WorkDayModel یا null.
   WorkDayModel? getByJalaliDate(String jalaliDate) {
-    return workdays[_keyFromJalaliDate(jalaliDate)];
+    final key = _keyFromJalali(JalaliUtils.parseJalali(jalaliDate));
+    final workday = workdays[key];
+    return workday;
   }
 
+  /// دریافت مدل روز کاری بر اساس شیء Jalali.
+  /// [jalali] شیء Jalali.
+  /// برمی‌گرداند WorkDayModel یا null.
   WorkDayModel? getByJalali(sh.Jalali jalali) {
-    final jalaliDate = JalaliUtils.formatFromJalali(jalali);
-    return getByJalaliDate(jalaliDate);
+    final key = _keyFromJalali(jalali);
+    final workday = workdays[key];
+    return workday;
   }
 
+  /// حذف یک روز کاری بر اساس تاریخ جلالی (فرمت رشته‌ای).
+  /// [jalaliDate] تاریخ جلالی به صورت رشته.
   Future<void> deleteByJalaliDate(String jalaliDate) async {
-    await _workdayBox!.delete(_keyFromJalaliDate(jalaliDate));
+    await _workdayBox!.delete(_keyFromJalali(JalaliUtils.parseJalali(jalaliDate)));
   }
 
+  /// حذف یک روز کاری بر اساس شیء Jalali.
+  /// [jalali] شیء Jalali.
   Future<void> deleteByJalali(sh.Jalali jalali) async {
-    final jalaliDate = JalaliUtils.formatFromJalali(jalali);
-    await deleteByJalaliDate(jalaliDate);
+    await _workdayBox!.delete(_keyFromJalali(jalali));
   }
 
-  String _keyFromJalaliDate(String jalaliDate) {
-    return jalaliDate.replaceAll('/', '-');
+  /// ایجاد کلید Hive از تاریخ جلالی.
+  /// [jalali] شیء Jalali.
+  /// برمی‌گرداند کلید Hive با فرمت YYYY/MM/DD.
+  String _keyFromJalali(sh.Jalali jalali) {
+    // همیشه از فرمت YYYY/MM/DD استفاده کنید که با فرمت ذخیره‌شده در مدل مطابقت داشته باشد.
+    return JalaliUtils.formatFromJalali(jalali);
   }
 
   @override
   void onClose() {
-    _workdayBox?.listenable().removeListener(_refresh);
-    // Do not close the box here, as it might be needed by other parts of the app
+    _workdayBox?.listenable().removeListener(_refreshWorkdays);
     super.onClose();
   }
 }

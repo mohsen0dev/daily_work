@@ -14,4 +14,7 @@ class EmployerModel extends HiveObject {
   String? note;
 
   EmployerModel({required this.name, this.phone, this.note});
+
+  /// تبدیل مدل کارفرما به نقشه JSON برای پشتیبان‌گیری
+  Map<String, dynamic> toJson() => {'name': name, 'phone': phone, 'note': note};
 }

@@ -17,10 +17,13 @@ class PaymentModel extends HiveObject {
   @HiveField(3)
   String? note;
 
-  PaymentModel({
-    required this.jalaliDate,
-    this.employerId,
-    required this.amount,
-    this.note,
-  });
+  PaymentModel({required this.jalaliDate, this.employerId, required this.amount, this.note});
+
+  /// تبدیل مدل پرداخت به نقشه JSON برای پشتیبان‌گیری
+  Map<String, dynamic> toJson() => {
+    'jalaliDate': jalaliDate,
+    'employerId': employerId,
+    'amount': amount,
+    'note': note,
+  };
 }

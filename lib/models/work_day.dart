@@ -31,4 +31,14 @@ class WorkDayModel extends HiveObject {
     this.description,
     this.wage,
   });
+
+  /// تبدیل مدل روز کاری به نقشه JSON برای پشتیبان‌گیری
+  Map<String, dynamic> toJson() => {
+    'wage': wage,
+    'jalaliDate': jalaliDate,
+    'employerId': employerId,
+    'worked': worked,
+    'hours': hours,
+    'description': description,
+  };
 }

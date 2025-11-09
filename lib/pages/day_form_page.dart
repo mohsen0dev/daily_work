@@ -22,7 +22,7 @@ class DayFormPage extends StatefulWidget {
 class _DayFormPageState extends State<DayFormPage> {
   final WorkDaysController workDaysController = Get.find<WorkDaysController>();
   final EmployersController employersController = Get.find<EmployersController>();
-  final SettingController settingCtrl = Get.find<SettingController>();
+  final SettingsController settingCtrl = Get.find<SettingsController>();
   String? _employerErrorText;
   String? _wageErrorText;
   late WorkDayModel? existingWorkDay;
@@ -125,7 +125,7 @@ class _DayFormPageState extends State<DayFormPage> {
                             worked = value;
                           });
                         },
-                        activeColor: Colors.blue,
+                        activeThumbColor: Colors.blue,
                       ),
                     ],
                   ),

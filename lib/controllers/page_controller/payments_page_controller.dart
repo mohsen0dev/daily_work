@@ -34,7 +34,7 @@ class PaymentSummary {
 class PaymentsPageController extends GetxController {
   final PaymentsController _paymentsController = Get.find<PaymentsController>();
   final EmployersController _employersController = Get.find<EmployersController>();
-  final SettingController _settingController = Get.find<SettingController>();
+  final SettingsController _settingController = Get.find<SettingsController>();
 
   final Rxn<int> selectedEmployerId = Rxn<int>();
   final RxList<p.Jalali> selectedMonths = <p.Jalali>[].obs;

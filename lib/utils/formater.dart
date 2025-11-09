@@ -1,19 +1,37 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class ThousandSeparatorInputFormatter extends TextInputFormatter {
   final NumberFormat _formatter = NumberFormat.decimalPattern(
-      'en'); // 'en' or your desired locale for formatting
+    'en',
+  ); // 'en' or your desired locale for formatting
 
   // Helper to normalize Persian/Arabic digits to ASCII
   String _normalizeToAscii(String input) {
     const arabicIndic = {
-      '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
-      '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
+      '٠': '0',
+      '١': '1',
+      '٢': '2',
+      '٣': '3',
+      '٤': '4',
+      '٥': '5',
+      '٦': '6',
+      '٧': '7',
+      '٨': '8',
+      '٩': '9',
     };
     const persian = {
-      '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
-      '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+      '۰': '0',
+      '۱': '1',
+      '۲': '2',
+      '۳': '3',
+      '۴': '4',
+      '۵': '5',
+      '۶': '6',
+      '۷': '7',
+      '۸': '8',
+      '۹': '9',
     };
     final buffer = StringBuffer();
     for (final ch in input.split('')) {
@@ -23,8 +41,7 @@ class ThousandSeparatorInputFormatter extends TextInputFormatter {
   }
 
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue,
-      TextEditingValue newValue,) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     // If the new value is empty, return it as is
     if (newValue.text.isEmpty) {
       return newValue.copyWith(text: '');
@@ -66,7 +83,7 @@ class ThousandSeparatorInputFormatter extends TextInputFormatter {
       );
     } catch (e) {
       // Log the error for debugging purposes
-      // print('Error formatting input: $e');
+      debugPrint('Error formatting input: $e');
       // In case of an error (e.g., number too large for int.parse, though less likely with digitsOnly),
       // return the old value to prevent a crash or unexpected behavior.
       return oldValue;

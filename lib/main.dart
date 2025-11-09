@@ -3,6 +3,8 @@ import 'package:daily_work/controllers/payments_controller.dart';
 import 'package:daily_work/controllers/setting_controller.dart';
 import 'package:daily_work/controllers/workdays_controller.dart';
 import 'package:daily_work/pages/about_page.dart';
+import 'package:daily_work/services/backup_restore_service.dart';
+import 'package:daily_work/services/permission_service.dart';
 import 'package:daily_work/utils/back_button_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -37,20 +39,23 @@ Future<void> main() async {
   await Hive.openBox<PaymentModel>('payments');
   await Hive.openBox<SettingsModel>('settings');
 
-  Get.put<SettingController>(
-    SettingController(), // Pass the opened box
+  Get.put<SettingsController>(
+    SettingsController(), // Pass the opened box
     permanent: true,
   );
   await Get.putAsync<WorkDaysController>(() async {
     final controller = WorkDaysController();
-    await controller.init();
+    controller.onInit();
     return controller;
   }, permanent: true);
 
   Get.put(EmployersController());
   Get.put(PaymentsController());
-  Get.put(SettingController());
+  Get.put(SettingsController());
   Get.put(MainNavigationController());
+
+  Get.put(PermissionService());
+  Get.put(BackupRestoreService());
 
   runApp(const MyApp());
 }
@@ -61,7 +66,7 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    final SettingController settingController = Get.find<SettingController>();
+    final SettingsController settingController = Get.find<SettingsController>();
 
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
@@ -89,7 +94,7 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
           primary: Colors.blue,
           onPrimary: Colors.black87,
-          secondary: Colors.orangeAccent,
+          secondary: Colors.blue,
           onSecondary: Colors.white,
           error: Colors.redAccent,
           onError: Colors.white,
@@ -108,7 +113,7 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.dark, // Essential for dark mode color scheme
           primary: Colors.tealAccent,
           onPrimary: Colors.black,
-          secondary: Colors.deepOrangeAccent,
+          secondary: Colors.tealAccent,
           onSecondary: Colors.white,
           error: Colors.redAccent,
           onError: Colors.black,
@@ -116,7 +121,6 @@ class MyApp extends StatelessWidget {
           onSurface: Colors.white70,
           seedColor: Colors.tealAccent,
         ),
-        
       ),
 
       home: const MainNavigationPage(),

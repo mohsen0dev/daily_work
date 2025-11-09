@@ -41,4 +41,13 @@ class SettingsModel extends HiveObject {
       isDarkMode: isDarkMode ?? this.isDarkMode,
     );
   }
+
+  /// تبدیل مدل تنظیمات به نقشه JSON برای پشتیبان‌گیری
+  Map<String, dynamic> toJson() => {
+    'isDaily': isDaily,
+    'dailyWage': dailyWage,
+    'hourlyWage': hourlyWage,
+    'isDarkMode': isDarkMode,
+    'defaultEmployerId': defaultEmployerId,
+  };
 }
