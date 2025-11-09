@@ -35,35 +35,33 @@ android {
     productFlavors {
         create("armv7a") {
             dimension = "abi"
-            ndk {
-                abiFilters += listOf("armeabi-v7a")
-            }
-            versionCode = 1011
+//            ndk {
+//                abiFilters += listOf("armeabi-v7a")
+//            }
+            versionCode = 1021
         }
         create("arm64") {
             dimension = "abi"
-            ndk {
-                abiFilters += listOf("arm64-v8a")
-            }
-            versionCode = 1012
+//            ndk {
+//                abiFilters += listOf("arm64-v8a")
+//            }
+            versionCode = 1022
         }
         create("x86_64") {
             dimension = "abi"
-            ndk {
-                abiFilters += listOf("x86_64")
-            }
-            versionCode = 1013
+//            ndk {
+//                abiFilters += listOf("x86_64")
+//            }
+            versionCode = 1023
         }
-        create("universal") {
-            dimension = "abi"
-            ndk {
-                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")
-            }
-            versionCode = 1014
-        }
+//        create("universal") {
+//            dimension = "abi"
+//            ndk {
+//                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")
+//            }
+//            versionCode = 1024
+//        }
     }
-
-    
 
     signingConfigs {
         create("release") {
@@ -99,3 +97,4 @@ flutter {
 // flutter build apk --flavor armv7a --release
 // flutter build apk --flavor arm64 --release
 // flutter build apk --flavor x86_64 --release
+// flutter build apk --release --split-per-abi

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../controllers/page_controller/about_page_controller.dart';
 import '../controllers/setting_controller.dart';
 import '../services/backup_restore_service.dart';
 import '../utils/formater.dart'; // برای ThousandSeparatorInputFormatter
@@ -19,6 +20,28 @@ class SettingsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('تنظیمات'), centerTitle: true),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          controllerSeting.saveSettings2();
+        },
+        backgroundColor: Theme.of(context).primaryColor,
+
+        label: SizedBox(
+          width: MediaQuery.sizeOf(context).width - 90,
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.save, color: Colors.black87),
+              SizedBox(width: 5),
+              Text(
+                'ذخیره تنظیمات',
+                style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -149,6 +172,7 @@ class SettingsPage extends StatelessWidget {
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.email),
                     onPressed: () {
+                      Get.lazyPut(() => AboutController());
                       Get.toNamed('/about'); // ناوبری به صفحه AboutPage
                     },
                     label: const Text('درباره برنامه'),
@@ -161,26 +185,7 @@ class SettingsPage extends StatelessWidget {
                 ),
               ),
             ),
-
-            const SizedBox(height: 24.0),
-
-            // دکمه ذخیره تنظیمات
-            Center(
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width,
-                height: 40.0,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.save),
-                  label: const Text('ذخیره تنظیمات'),
-                  onPressed: () {
-                    controllerSeting.saveSettings;
-                  }, // فراخوانی متد ذخیره از کنترلر
-                  style: FilledButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox(height: 80),
           ],
         ),
       ),
