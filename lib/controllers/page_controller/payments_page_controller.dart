@@ -237,7 +237,7 @@ class PaymentsPageController extends GetxController {
               const SizedBox(height: 16),
               Obx(
                 () => DropdownButtonFormField<int?>(
-                  value: dialogSelectedEmployerId.value, // استفاده از .value
+                  initialValue: dialogSelectedEmployerId.value, // استفاده از .value
                   decoration: InputDecoration(
                     labelText: 'کارفرما *',
                     border: const OutlineInputBorder(),
@@ -379,7 +379,7 @@ class PaymentsPageController extends GetxController {
               const SizedBox(height: 16),
               Obx(
                 () => DropdownButtonFormField<int?>(
-                  value: dialogSelectedEmployerId.value, // استفاده از .value
+                  initialValue: dialogSelectedEmployerId.value, // استفاده از .value
                   decoration: InputDecoration(
                     labelText: 'کارفرما *',
                     border: const OutlineInputBorder(),

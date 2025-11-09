@@ -104,7 +104,7 @@ class _SharedFilterBarState extends State<SharedFilterBar> {
               flex: 3,
               child: DropdownButtonFormField<int?>(
                 borderRadius: BorderRadius.circular(10),
-                value: _selectedEmployerId,
+                initialValue: _selectedEmployerId,
                 isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'فیلتر کارفرما',

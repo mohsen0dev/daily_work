@@ -166,7 +166,7 @@ class _DayFormPageState extends State<DayFormPage> {
                                   ),
                                   const SizedBox(height: 8),
                                   DropdownButtonFormField<int?>(
-                                    value: selectedEmployerId,
+                                    initialValue: selectedEmployerId,
 
                                     decoration: InputDecoration(
                                       labelText: 'انتخاب کارفرما',
@@ -199,7 +199,7 @@ class _DayFormPageState extends State<DayFormPage> {
                                   ),
                                   const SizedBox(height: 8),
                                   DropdownButtonFormField<String>(
-                                    value: workType,
+                                    initialValue: workType,
                                     decoration: const InputDecoration(
                                       labelText: 'ساعت کاری',
                                       border: OutlineInputBorder(),

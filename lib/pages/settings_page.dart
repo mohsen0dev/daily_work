@@ -13,6 +13,7 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // تزریق کنترلر صفحه تنظیمات
     final SettingsPageController controller = Get.put(SettingsPageController());
 
     return Scaffold(
@@ -66,7 +67,7 @@ class SettingsPage extends StatelessWidget {
               icon: const Icon(Icons.person_search, color: Colors.blue),
               child: Obx(() {
                 return DropdownButtonFormField<int?>(
-                  value: controller.selectedEmployerId.value, // مقدار جاری از کنترلر
+                  initialValue: controller.selectedEmployerId.value, // مقدار جاری از کنترلر
                   decoration: const InputDecoration(
                     labelText: 'انتخاب کارفرمای پیش فرض',
                     border: OutlineInputBorder(),
@@ -91,6 +92,49 @@ class SettingsPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _CartWidget(
+              title: 'پشتیبان گیری و بازیابی',
+              icon: const Icon(Icons.backup_outlined),
+              child: Row(
+                children: [
+                  Expanded(
+                    child:
+                        // اتصال دکمه پشتیبان‌گیری به متد کنترلر
+                        ElevatedButton.icon(
+                          onPressed: controller.performBackup,
+                          icon: const Icon(Icons.save_alt_outlined),
+                          label: const Text('پشتیبان‌گیری'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.0),
+                              side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                            ),
+                          ),
+                        ),
+                  ),
+
+                  const SizedBox(width: 16.0),
+                  Expanded(
+                    child:
+                        // اتصال دکمه بازیابی به متد کنترلر
+                        ElevatedButton.icon(
+                          onPressed: controller.performRestore,
+                          icon: const Icon(Icons.restore_outlined),
+                          label: const Text('بازیابی اطلاعات'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.0),
+                              side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                            ),
+                          ),
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _CartWidget(
               title: ' درباره برنامه',
               icon: const Icon(Icons.info_outline),
               child: Center(
@@ -112,6 +156,7 @@ class SettingsPage extends StatelessWidget {
                 ),
               ),
             ),
+
             const SizedBox(height: 24.0),
 
             // دکمه ذخیره تنظیمات
