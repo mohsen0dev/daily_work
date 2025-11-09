@@ -25,3 +25,14 @@ extension PriceFormatString on String {
     return buffer.toString();
   }
 }
+
+extension FixZiro on double {
+  String fixZiroString() {
+    // بررسی می‌کند آیا باقیمانده تقسیم عدد بر 1 صفر است یا خیر.
+    if (this % 1 == 0) {
+      return toInt().toString(); // اگر صفر بود، یعنی عدد صحیح است.
+    } else {
+      return toStringAsFixed(1); // در غیر این صورت، با یک رقم اعشار نمایش بده.
+    }
+  }
+}

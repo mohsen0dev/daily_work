@@ -89,6 +89,8 @@ class _BalancePageState extends State<BalancePage> {
             Expanded(
               child: Obx(() {
                 final workdaysMap = workDaysController.workdays;
+                final allPayments = paymentsController.payments;
+                final allEmployers = employersController.employers;
 
                 /// محاسبه کل روزهای کاری فیلتر شده بر اساس تاریخ.
                 final overallWorkedDays = workdaysMap.values
@@ -101,19 +103,57 @@ class _BalancePageState extends State<BalancePage> {
                     .fold<int>(0, (sum, d) => sum + (d.wage ?? 0));
 
                 /// محاسبه کل دریافتی‌ها فیلتر شده بر اساس تاریخ.
-                final overallTotalPayments = paymentsController.payments
+                final overallTotalPayments = allPayments
                     .where((p) => _isInSelectedMonths(p.value.jalaliDate))
                     .fold<int>(0, (sum, p) => sum + p.value.amount);
 
                 /// محاسبه تراز کلی حساب.
                 final overallBalance = overallTotalEarned - overallTotalPayments;
 
-                /// لیست کارفرمایانی که باید نمایش داده شوند (بر اساس فیلتر کارفرما).
-                final employersToDisplay = selectedEmployerId == null
-                    ? employersController.employers
-                    : employersController.employers
-                          .where((entry) => entry.key == selectedEmployerId)
-                          .toList();
+                /// لیست کارفرمایانی که باید بررسی شوند (بر اساس فیلتر کارفرما).
+                final employersToConsider = selectedEmployerId == null
+                    ? allEmployers
+                    : allEmployers.where((entry) => entry.key == selectedEmployerId).toList();
+
+                /// لیست کارفرماهای فعال با داده‌های محاسبه شده.
+                final List<Map<String, dynamic>> activeEmployersData = [];
+                for (final entry in employersToConsider) {
+                  final employerId = entry.key;
+
+                  final employerWorkdays = workdaysMap.values
+                      .where(
+                        (workday) =>
+                            workday.employerId == employerId &&
+                            workday.worked &&
+                            _isInSelectedMonths(workday.jalaliDate),
+                      )
+                      .fold<double>(0, (sum, workday) => sum + (workday.hours / 8));
+
+                  final employerPayments = allPayments
+                      .where(
+                        (p) => p.value.employerId == employerId && _isInSelectedMonths(p.value.jalaliDate),
+                      )
+                      .fold<int>(0, (sum, p) => sum + p.value.amount);
+
+                  // فقط کارفرماهایی را اضافه کن که کارکرد یا پرداختی داشته‌اند.
+                  if (employerWorkdays > 0 || employerPayments > 0) {
+                    final employerEarn = workdaysMap.values
+                        .where(
+                          (workday) =>
+                              workday.employerId == employerId && _isInSelectedMonths(workday.jalaliDate),
+                        )
+                        .fold<int>(0, (sum, workday) => sum + (workday.wage ?? 0));
+                    final employerBalance = employerEarn - employerPayments;
+
+                    activeEmployersData.add({
+                      'entry': entry,
+                      'workdays': employerWorkdays,
+                      'earn': employerEarn,
+                      'payments': employerPayments,
+                      'balance': employerBalance,
+                    });
+                  }
+                }
 
                 return SingleChildScrollView(
                   padding: const EdgeInsetsDirectional.all(8),
@@ -132,7 +172,7 @@ class _BalancePageState extends State<BalancePage> {
                       const SizedBox(height: 18),
 
                       // کارت‌های جزئیات به تفکیک کارفرما
-                      if (employersToDisplay.isNotEmpty) ...[
+                      if (activeEmployersData.isNotEmpty) ...[
                         const Row(
                           children: [
                             Icon(Icons.groups, color: Colors.blue, size: 22),
@@ -144,49 +184,19 @@ class _BalancePageState extends State<BalancePage> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        ...employersToDisplay.map((entry) {
+                        ...activeEmployersData.map((data) {
+                          final entry = data['entry'] as MapEntry<dynamic, EmployerModel>;
                           final employer = entry.value;
                           final employerId = entry.key;
-
-                          /// محاسبه روزهای کاری برای کارفرمای خاص.
-                          final employerWorkdays = workdaysMap.values
-                              .where(
-                                (workday) =>
-                                    workday.employerId == employerId &&
-                                    workday.worked &&
-                                    _isInSelectedMonths(workday.jalaliDate),
-                              )
-                              .fold<double>(0, (sum, workday) => sum + (workday.hours / 8));
-
-                          /// محاسبه دستمزد برای کارفرمای خاص.
-                          final employerEarn = workdaysMap.values
-                              .where(
-                                (workday) =>
-                                    workday.employerId == employerId &&
-                                    _isInSelectedMonths(workday.jalaliDate),
-                              )
-                              .fold<int>(0, (sum, workday) => sum + (workday.wage ?? 0));
-
-                          /// محاسبه دریافتی‌ها برای کارفرمای خاص.
-                          final employerPayments = paymentsController.payments
-                              .where(
-                                (p) =>
-                                    p.value.employerId == employerId &&
-                                    _isInSelectedMonths(p.value.jalaliDate),
-                              )
-                              .fold<int>(0, (sum, p) => sum + p.value.amount);
-
-                          /// محاسبه تراز حساب برای کارفرمای خاص.
-                          final employerBalance = employerEarn - employerPayments;
 
                           return _employersCards(
                             employerId,
                             context,
                             employer,
-                            employerWorkdays,
-                            employerEarn,
-                            employerPayments,
-                            employerBalance,
+                            data['workdays'],
+                            data['earn'],
+                            data['payments'],
+                            data['balance'],
                             workDaysController,
                             paymentsController,
                             employersController,
@@ -248,7 +258,7 @@ class _BalancePageState extends State<BalancePage> {
               builder: (BuildContext ctx) => AlertDialog(
                 title: Text(employer.name),
                 content: Text(
-                  'روزهای کاری: $employerWorkdays\nدستمزد: ${employerEarn.toPriceString()} تومان\nدریافتی: ${employerPayments.toPriceString()} تومان',
+                  'روزهای کاری: ${employerWorkdays.fixZiroString()} روز\nدستمزد: ${employerEarn.toPriceString()} تومان\nدریافتی: ${employerPayments.toPriceString()} تومان \n',
                 ),
                 actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('بستن'))],
               ),
