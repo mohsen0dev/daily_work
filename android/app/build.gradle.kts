@@ -54,13 +54,13 @@ android {
 //            }
             versionCode = 1023
         }
-//        create("universal") {
-//            dimension = "abi"
+        create("universal") {
+            dimension = "abi"
 //            ndk {
 //                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")
 //            }
-//            versionCode = 1024
-//        }
+            versionCode = 1024
+        }
     }
 
     signingConfigs {

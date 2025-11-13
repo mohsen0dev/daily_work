@@ -56,9 +56,13 @@ class BackupRestoreService extends GetxService {
   /// بازگرداندن مسیر کامل فایل پشتیبان در دایرکتوری اسناد برنامه.
   Future<File> get _localFile async {
     // مسیر ذخیره‌سازی فایل پشتیبان در دایرکتوری Downloads.
-    final directory = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
-
-    return File('${directory.path}/$_backupFileName');
+    try {
+      final directory = await getDownloadsDirectory().then((value) => value!);
+      return File('${directory.path}/$_backupFileName');
+    } catch (e) {
+      Get.log('خطا در بازیابی مسیر پشتیبان: $e');
+      return File('');
+    }
   }
 
   /// انجام فرایند پشتیبان‌گیری کامل از اطلاعات Hive.
@@ -72,7 +76,8 @@ class BackupRestoreService extends GetxService {
 
     try {
       // باکس‌های اصلی
-      List<SettingsModel> settingsList = []; // از آنجایی که settings سینگلتون است، معمولاً یک آیتم دارد.
+      List<SettingsModel> settingsList =
+          []; // از آنجایی که settings سینگلتون است، معمولاً یک آیتم دارد.
       List<EmployerModel> employers = [];
       List<PaymentModel> payments = [];
       List<WorkDayModel> workdays = [];
@@ -114,8 +119,13 @@ class BackupRestoreService extends GetxService {
       // ساختار نهایی داده برای پشتیبان‌گیری (نسخه 3)
       final Map<String, dynamic> payload = {
         'version': 3, // نسخه پشتیبان
-        'settings': settingsList.isNotEmpty ? settingsList.first.toJson() : null, // فرض بر سینگلتون بودن
-        'employers': List.generate(employers.length, (i) => employers[i].toJson()),
+        'settings': settingsList.isNotEmpty
+            ? settingsList.first.toJson()
+            : null, // فرض بر سینگلتون بودن
+        'employers': List.generate(
+          employers.length,
+          (i) => employers[i].toJson(),
+        ),
         'payments': List.generate(payments.length, (i) => payments[i].toJson()),
         'workdays': List.generate(workdays.length, (i) => workdays[i].toJson()),
       };
@@ -164,7 +174,8 @@ class BackupRestoreService extends GetxService {
     try {
       final String jsonContents = await file.readAsString();
       final dynamic jsonResponse = json.decode(jsonContents);
-      final int version = (jsonResponse is Map && jsonResponse['version'] is int)
+      final int version =
+          (jsonResponse is Map && jsonResponse['version'] is int)
           ? jsonResponse['version'] as int
           : 1;
 
@@ -177,8 +188,12 @@ class BackupRestoreService extends GetxService {
         Get.find<SettingsController>().update();
       } else {
         // برای نسخه‌های قدیمی‌تر، یک پیام خطا یا لاگ می‌دهیم چون قرار است فقط ساختار جدید پشتیبانی شود.
-        Get.log('نسخه پشتیبان قدیمی ($version) یا ساختار ناقص. فقط از نسخه 3 پشتیبانی می‌شود.');
-        notficationError(message: 'فایل پشتیبان با ساختار جدید سازگار نیست. (نسخه $version)');
+        Get.log(
+          'نسخه پشتیبان قدیمی ($version) یا ساختار ناقص. فقط از نسخه 3 پشتیبانی می‌شود.',
+        );
+        notficationError(
+          message: 'فایل پشتیبان با ساختار جدید سازگار نیست. (نسخه $version)',
+        );
         return;
       }
 
@@ -209,7 +224,8 @@ class BackupRestoreService extends GetxService {
         final box = Hive.box<SettingsModel>('settings');
         await box.clear();
 
-        final Map<String, dynamic> s = payload['settings'] as Map<String, dynamic>;
+        final Map<String, dynamic> s =
+            payload['settings'] as Map<String, dynamic>;
         // تنها یک آیتم تنظیمات سینگلتون را بازسازی می‌کنیم
         final settingsModel = SettingsModel(
           isDaily: s['isDaily'] == true,
@@ -234,7 +250,13 @@ class BackupRestoreService extends GetxService {
         await box.clear();
         for (final e in (payload['employers'] as List)) {
           if (e is Map<String, dynamic>) {
-            box.add(EmployerModel(name: (e['name'] ?? '').toString(), phone: e['phone'], note: e['note']));
+            box.add(
+              EmployerModel(
+                name: (e['name'] ?? '').toString(),
+                phone: e['phone'],
+                note: e['note'],
+              ),
+            );
           }
         }
       }
@@ -286,7 +308,9 @@ class BackupRestoreService extends GetxService {
               wage: w['wage'] as int?,
             );
             // **تغییر اعمال شده:** استفاده از put با کلید رشته‌ای تاریخ جلالی
-            final String key = JalaliUtils.formatFromJalali(JalaliUtils.parseJalali(workday.jalaliDate));
+            final String key = JalaliUtils.formatFromJalali(
+              JalaliUtils.parseJalali(workday.jalaliDate),
+            );
             await box.put(key, workday);
           }
         }
