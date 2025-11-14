@@ -27,33 +27,44 @@ class PermissionService extends GetxService {
 
   /// بررسی می‌کند که آیا برنامه نیاز به درخواست دسترسی Legacy Storage دارد (API < 33).
   bool get _needsLegacyStoragePermission {
-    // اگر اندروید نباشد یا سطح API >= 33 باشد، نیاز به دسترسی Legacy نداریم.
-    // در API 33 به بعد، اگر از دایرکتوری‌های اپلیکیشن (مثل getApplicationDocumentsDirectory) استفاده کنیم،
-    // نیازی به دسترسی عمومی ذخیره‌سازی نیست.
+    // این متد دیگر در requestStoragePermissions استفاده نمی‌شود اما برای سازگاری حفظ می‌شود.
     return Platform.isAndroid && (_androidSdkInt != null && _androidSdkInt! < 33);
   }
 
   /// درخواست دسترسی‌های ذخیره‌سازی مورد نیاز بر اساس نسخه اندروید.
   /// برمی‌گرداند true در صورت موفقیت یا عدم نیاز به دسترسی.
   Future<bool> requestStoragePermissions() async {
-    // اگر پلتفرم ویندوز، iOS یا API >= 33 باشد (و از دایرکتوری‌های داخلی استفاده کنیم)، نیازی به درخواست صریح نیست.
-    if (!Platform.isAndroid || !_needsLegacyStoragePermission) {
-      Get.log('Storage permissions not strictly required or API >= 33.');
+    // اگر پلتفرم ویندوز، iOS یا وب باشد، نیازی به درخواست صریح نیست.
+    if (!Platform.isAndroid) {
+      Get.log('Storage permissions not strictly required.');
       return true;
     }
 
-    try {
-      // برای نسخه‌های قدیمی (API < 33)، دسترسی ذخیره‌سازی را درخواست می‌کنیم.
-      // این دسترسی معمولاً شامل WRITE_EXTERNAL_STORAGE است.
-      final status = await Permission.storage.request();
+    // 1. تعیین مجوز مورد نیاز بر اساس سطح API
+    final Permission permission;
+    // Android 11 (API 30) به بالا نیاز به MANAGE_EXTERNAL_STORAGE دارد
+    if (_androidSdkInt != null && _androidSdkInt! >= 30) {
+      permission = Permission.manageExternalStorage;
+      Get.log('Requesting MANAGE_EXTERNAL_STORAGE for API >= 30.');
+    } else {
+      // API < 30 از Permission.storage استفاده می‌کند.
+      permission = Permission.storage;
+      Get.log('Requesting Storage Permission for API < 30.');
+    }
 
+    try {
+      // 2. درخواست مجوز
+      final status = await permission.request();
+
+      // 3. مدیریت وضعیت‌ها
       if (status.isGranted) {
         return true;
-      } else if (status.isDenied || status.isPermanentlyDenied) {
-        Get.log('دسترسی ذخیره‌سازی رد شد: $status');
+      } else if (status.isPermanentlyDenied) {
+        // اگر دسترسی به صورت دائمی رد شده باشد (یا برای MANAGE_EXTERNAL_STORAGE اعطا نشده باشد)
+        Get.log('دسترسی ذخیره‌سازی رد شد (دائم): $status');
         Get.snackbar(
           'دسترسی لازم',
-          'لطفاً دسترسی به حافظه را برای انجام پشتیبان‌گیری و بازیابی مجاز کنید.',
+          'لطفاً دسترسی به تمام فایل‌ها را از تنظیمات برنامه مجاز کنید.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
@@ -64,6 +75,17 @@ class PermissionService extends GetxService {
             },
             child: const Text('تنظیمات', style: TextStyle(color: Colors.yellowAccent)),
           ),
+        );
+        return false;
+      } else if (status.isDenied) {
+        // اگر دسترسی موقتاً رد شده باشد
+        Get.log('دسترسی ذخیره‌سازی رد شد (موقت): $status');
+        Get.snackbar(
+          'دسترسی لازم',
+          'برای انجام عملیات، دسترسی به حافظه را مجاز کنید. لطفاً مجدداً تلاش کنید.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
         );
         return false;
       }
@@ -77,10 +99,18 @@ class PermissionService extends GetxService {
   /// بررسی سریع وضعیت دسترسی بدون درخواست مجدد.
   /// برمی‌گرداند true اگر دسترسی اعطا شده باشد یا نیازی به آن نباشد.
   Future<bool> checkStoragePermissions() async {
-    if (!Platform.isAndroid || !_needsLegacyStoragePermission) {
+    if (!Platform.isAndroid) {
       return true;
     }
-    final status = await Permission.storage.status;
+
+    final Permission permission;
+    if (_androidSdkInt != null && _androidSdkInt! >= 30) {
+      permission = Permission.manageExternalStorage;
+    } else {
+      permission = Permission.storage;
+    }
+
+    final status = await permission.status;
     return status.isGranted;
   }
 }
